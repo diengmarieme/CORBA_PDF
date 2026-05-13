@@ -1,0 +1,7 @@
+FROM eclipse-temurin:11-jre-alpine
+WORKDIR /app
+
+# On copie le JAR du serveur (vérifie bien le nom dans ton dossier target)
+COPY corba-server/target/corba-server.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,0 +1,24 @@
+FROM maven:3.9-eclipse-temurin-11-alpine AS builder
+WORKDIR /build
+COPY web-middleware/libs ./libs
+RUN mvn install:install-file -Dfile=libs/glassfish-corba-omgapi-4.2.4.jar \
+    -DgroupId=org.glassfish.corba -DartifactId=glassfish-corba-omgapi \
+    -Dversion=4.2.4 -Dpackaging=jar -q && \
+    mvn install:install-file -Dfile=libs/glassfish-corba-orb-4.2.4.jar \
+    -DgroupId=org.glassfish.corba -DartifactId=glassfish-corba-orb \
+    -Dversion=4.2.4 -Dpackaging=jar -q
+COPY web-middleware/pom.xml .
+RUN mvn dependency:go-offline -q 2>/dev/null || true
+COPY web-middleware/src ./src
+RUN mvn package -DskipTests -q
+
+FROM eclipse-temurin:11-jre-alpine
+LABEL description="PDF Web Middleware"
+WORKDIR /app
+COPY --from=builder /build/target/*.jar /app/web-middleware.jar
+
+RUN printf '#!/bin/sh\nset -e\necho "[start] Pause 30s..."\nsleep 30\necho "[start] Lancement Spring Boot"\nexec java \\\n  -Djava.awt.headless=true -Xmx384m -Xms128m \\\n  -Dserver.port=${WEB_PORT:-8080} \\\n  -Dcorba.naming.host=${NAMING_HOST:-naming} \\\n  -Dcorba.naming.port=${NAMING_PORT:-2809} \\\n  -Djacorb.naming.host=${NAMING_HOST:-naming} \\\n  -Djacorb.naming.port=${NAMING_PORT:-2809} \\\n  -jar /app/web-middleware.jar\n' \
+> /app/start.sh && chmod +x /app/start.sh
+
+EXPOSE 8080
+ENTRYPOINT ["/app/start.sh"]

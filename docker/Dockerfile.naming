@@ -1,0 +1,44 @@
+FROM maven:3.9-eclipse-temurin-11-alpine AS downloader
+WORKDIR /download
+RUN cat > pom.xml << 'POMEOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>download</groupId><artifactId>ns-dl</artifactId><version>1.0</version>
+  <dependencies>
+    <dependency><groupId>org.jacorb</groupId><artifactId>jacorb</artifactId><version>3.9</version></dependency>
+    <dependency><groupId>org.jacorb</groupId><artifactId>jacorb-omgapi</artifactId><version>3.9</version></dependency>
+    <dependency><groupId>org.jacorb</groupId><artifactId>jacorb-services</artifactId><version>3.9</version></dependency>
+    <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-simple</artifactId><version>1.7.36</version></dependency>
+    <dependency><groupId>org.glassfish.corba</groupId><artifactId>glassfish-corba-omgapi</artifactId><version>4.2.4</version></dependency>
+    <dependency><groupId>org.glassfish.corba</groupId><artifactId>glassfish-corba-orb</artifactId><version>4.2.4</version></dependency>
+  </dependencies>
+  <repositories><repository><id>j</id><url>https://www.jacorb.org/maven</url></repository></repositories>
+</project>
+POMEOF
+RUN mvn dependency:copy-dependencies -DoutputDirectory=/download/libs -q
+
+FROM eclipse-temurin:11-jre-alpine
+LABEL description="JacORB Naming Service"
+WORKDIR /naming
+COPY --from=downloader /download/libs /naming/libs
+
+RUN printf '#!/bin/sh\nset -e\n\
+NS_PORT=${NAMING_PORT:-2809}\n\
+MYHOST=$(hostname)\n\
+echo "=== Naming Service ${MYHOST}:${NS_PORT} ==="\n\
+exec java \\\n\
+  -Dorg.omg.CORBA.ORBClass=org.jacorb.orb.ORB \\\n\
+  -Dorg.omg.CORBA.ORBSingletonClass=org.jacorb.orb.ORBSingleton \\\n\
+  -DOAAddress=iiop://${MYHOST}:${NS_PORT} \\\n\
+  -Djacorb.naming.ior_filename=/naming/ns.ior \\\n\
+  -Djacorb.naming.purge=on \\\n\
+  -Djacorb.log.default.verbosity=2 \\\n\
+  -cp "/naming/libs/*" \\\n\
+  org.jacorb.naming.NameServer\n' \
+> /naming/start.sh && chmod +x /naming/start.sh
+
+EXPOSE 2809
+HEALTHCHECK --interval=10s --timeout=8s --start-period=45s --retries=12 \
+  CMD test -f /naming/ns.ior && grep -q "IOR:" /naming/ns.ior && exit 0 || exit 1
+ENTRYPOINT ["/naming/start.sh"]

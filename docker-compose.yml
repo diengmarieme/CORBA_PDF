@@ -1,0 +1,101 @@
+# =============================================================
+# docker-compose.yml — PDF CORBA Project (Version Corrigée)
+# =============================================================
+
+networks:
+  corba-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  naming-data:
+    driver: local
+  tmp-files:
+    driver: local
+
+services:
+
+  # 1. SERVICE DE NOMMAGE (JacORB NameServer)
+  naming:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.naming
+    container_name: pdf-naming
+    environment:
+      NAMING_PORT: "2809"
+      # On passe l'IP ici. Si vous changez de réseau, 
+      # vous modifiez juste cette ligne et l'ipv4_address plus bas.
+      JACORB_ADDR: "172.20.0.10"
+    networks:
+      corba-net:
+        ipv4_address: 172.20.0.10
+  # 2. SERVEUR CORBA (Implémentation Java)
+  server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.server
+    container_name: pdf-server
+    hostname: server
+    restart: unless-stopped
+    environment:
+      environment:
+      NAMING_HOST: "naming"
+      NAMING_PORT: "2809"
+      SERVER_HOST: "172.20.0.11"
+      SERVER_PORT: "2810"
+      # Configuration de l'ORB pour publier la bonne IP au NameService
+      JAVA_OPTS: "-Xmx512m -Xms128m -Djava.awt.headless=true -Djacorb.orb.oa.addr=172.20.0.11 -Djacorb.orb.oa.port=2810"
+    ports:
+      - "${SERVER_PORT_EXPOSED:-2810}:2810"
+    volumes:
+      - tmp-files:/tmp/pdf-service
+    networks:
+      corba-net:
+        ipv4_address: 172.20.0.11
+    depends_on:
+      - naming
+
+  # 3. WEB MIDDLEWARE (Spring Boot)
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    container_name: pdf-web
+    hostname: web
+    restart: unless-stopped
+    environment:
+      NAMING_HOST: "naming"
+      NAMING_PORT: "2809"
+      SERVER_HOST: "server"
+      SERVER_PORT: "2810"
+      WEB_PORT: "8080"
+      CORBA_RETRY_MAX: "20"
+      CORBA_RETRY_DELAY_MS: "3000"
+      # L'adresse OA addr n'est pas critique ici car c'est un client pur
+      JAVA_OPTS: "-Xmx384m -Xms128m -Djava.awt.headless=true -Djacorb.orb.oa.addr=172.20.0.12"
+    ports:
+      - "${WEB_PORT_EXPOSED:-8080}:8080"
+    networks:
+      corba-net:
+        ipv4_address: 172.20.0.12
+    depends_on:
+      - naming
+      - server
+
+  # 4. FRONTEND (Nginx)
+  frontend:
+    image: nginx:alpine
+    container_name: pdf-frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${FRONTEND_PORT_EXPOSED:-80}:80"
+    networks:
+      corba-net:
+        ipv4_address: 172.20.0.13
+    depends_on:
+      - web

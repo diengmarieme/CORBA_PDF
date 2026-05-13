@@ -1,0 +1,276 @@
+// ============================================================
+// service.idl  —  Interface CORBA pour le service PDF N-Tier
+// Compatible JacORB / Java 11+
+// ============================================================
+
+    module com {
+    module pdfservice {
+        module corba {
+            // ... garde tout le reste du fichier pareil ...
+    // ----------------------------------------------------------
+    // Types de base
+    // ----------------------------------------------------------
+    typedef sequence<octet>  ByteArray;
+    typedef sequence<string> StringList;
+    typedef sequence<long>   LongList;
+    typedef sequence<ByteArray> ByteArrayList;
+
+    // ----------------------------------------------------------
+    // Exceptions personnalisées
+    // ----------------------------------------------------------
+    exception PDFProcessingException {
+        string message;
+        string errorCode;
+    };
+
+    exception InvalidParameterException {
+        string paramName;
+        string reason;
+    };
+
+    exception PDFPasswordException {
+        string message;
+    };
+
+    exception PDFEncryptionException {
+        string message;
+    };
+
+    // ----------------------------------------------------------
+    // Structures de données
+    // ----------------------------------------------------------
+
+    // Métadonnées d'un PDF
+    struct PDFMetadata {
+        string title;
+        string author;
+        string subject;
+        string creator;
+        long   pageCount;
+        long   fileSizeBytes;
+        boolean isEncrypted;
+        string pdfVersion;
+    };
+
+    // Paramètres de filigrane
+    struct WatermarkParams {
+        string text;
+        float  fontSize;
+        float  opacity;
+        float  rotationDegrees;
+        long   colorR;
+        long   colorG;
+        long   colorB;
+        boolean applyToAllPages;
+        LongList targetPages;
+    };
+
+    // Paramètres de compression
+    struct CompressionParams {
+        long   dpi;           // résolution images (ex: 150)
+        boolean compressImages;
+        boolean removeMetadata;
+    };
+
+    // Paramètres de rotation
+    struct RotationParams {
+        LongList pages;       // numéros de pages (base 1), vide = toutes
+        long     degrees;     // 90, 180, 270
+    };
+
+    // Résultat de conversion PDF→Images
+    struct ImageConversionResult {
+        ByteArrayList images;    // une image par page
+        StringList    mimeTypes; // "image/png" pour chaque image
+        long          pageCount;
+    };
+
+    // Résultat d'extraction de texte
+    struct TextExtractionResult {
+        string fullText;
+        StringList pageTexts; // texte par page
+        long       pageCount;
+    };
+
+    // Résultat de split
+    struct SplitResult {
+        ByteArrayList parts;
+        long          partCount;
+    };
+
+    // Résultat d'extraction d'images embarquées
+    struct EmbeddedImageResult {
+        ByteArrayList images;
+        StringList    mimeTypes;
+        long          imageCount;
+    };
+
+    // ----------------------------------------------------------
+    // Interface principale du service PDF
+    // ----------------------------------------------------------
+    interface IPDFService {
+
+        // ======================================================
+        // FONCTIONNALITÉS DE BASE (obligatoires)
+        // ======================================================
+
+        /**
+         * Fusionne plusieurs PDFs en un seul.
+         * @param pdfFiles  liste de PDF en bytes
+         * @return          PDF fusionné en bytes
+         */
+        ByteArray merge(in ByteArrayList pdfFiles)
+            raises (PDFProcessingException, InvalidParameterException);
+
+        /**
+         * Découpe un PDF en plusieurs fichiers selon un intervalle.
+         * @param pdfFile       PDF source en bytes
+         * @param pagesPerPart  nombre de pages par partie
+         * @return              SplitResult avec liste de PDFs
+         */
+        SplitResult split(in ByteArray pdfFile, in long pagesPerPart)
+            raises (PDFProcessingException, InvalidParameterException,
+                    PDFPasswordException);
+
+        /**
+         * Extrait des pages spécifiques dans un nouveau PDF.
+         * @param pdfFile   PDF source en bytes
+         * @param pages     liste de numéros de pages (base 1)
+         * @return          PDF avec les pages extraites
+         */
+        ByteArray extractPages(in ByteArray pdfFile, in LongList pages)
+            raises (PDFProcessingException, InvalidParameterException,
+                    PDFPasswordException);
+
+        /**
+         * Supprime des pages spécifiques d'un PDF.
+         * @param pdfFile   PDF source en bytes
+         * @param pages     liste de numéros de pages à supprimer (base 1)
+         * @return          PDF sans les pages supprimées
+         */
+        ByteArray deletePages(in ByteArray pdfFile, in LongList pages)
+            raises (PDFProcessingException, InvalidParameterException,
+                    PDFPasswordException);
+
+        /**
+         * Protège un PDF avec un mot de passe (chiffrement AES-256).
+         * @param pdfFile       PDF source en bytes
+         * @param userPassword  mot de passe utilisateur
+         * @param ownerPassword mot de passe propriétaire
+         * @return              PDF chiffré en bytes
+         */
+        ByteArray encrypt(in ByteArray pdfFile,
+                          in string userPassword,
+                          in string ownerPassword)
+            raises (PDFProcessingException, InvalidParameterException,
+                    PDFEncryptionException);
+
+        /**
+         * Convertit chaque page d'un PDF en image PNG.
+         * @param pdfFile   PDF source en bytes
+         * @param dpi       résolution de sortie (ex: 150, 300)
+         * @param password  mot de passe si PDF chiffré (vide si aucun)
+         * @return          ImageConversionResult
+         */
+        ImageConversionResult toImages(in ByteArray pdfFile,
+                                       in long dpi,
+                                       in string password)
+            raises (PDFProcessingException, InvalidParameterException,
+                    PDFPasswordException);
+
+        /**
+         * Extrait tout le texte d'un PDF.
+         * @param pdfFile   PDF source en bytes
+         * @param password  mot de passe si PDF chiffré (vide si aucun)
+         * @return          TextExtractionResult
+         */
+        TextExtractionResult extractText(in ByteArray pdfFile,
+                                         in string password)
+            raises (PDFProcessingException, PDFPasswordException);
+
+        /**
+         * Crée un nouveau PDF à partir d'un contenu texte.
+         * @param title    titre du document
+         * @param content  contenu texte (supporte \n pour sauts de ligne)
+         * @param author   auteur du document
+         * @return         PDF créé en bytes
+         */
+        ByteArray createPDF(in string title,
+                            in string content,
+                            in string author)
+            raises (PDFProcessingException, InvalidParameterException);
+
+        // ======================================================
+        // FONCTIONNALITÉS BONUS (pour la note)
+        // ======================================================
+
+        /**
+         * Compresse un PDF en réduisant la qualité des images embarquées.
+         * @param pdfFile  PDF source en bytes
+         * @param params   paramètres de compression
+         * @return         PDF compressé en bytes
+         */
+        ByteArray compress(in ByteArray pdfFile,
+                           in CompressionParams params)
+            raises (PDFProcessingException, InvalidParameterException);
+
+        /**
+         * Applique un filigrane textuel sur les pages d'un PDF.
+         * @param pdfFile  PDF source en bytes
+         * @param params   paramètres du filigrane
+         * @param password mot de passe si PDF chiffré (vide si aucun)
+         * @return         PDF avec filigrane en bytes
+         */
+        ByteArray addWatermark(in ByteArray pdfFile,
+                               in WatermarkParams params,
+                               in string password)
+            raises (PDFProcessingException, InvalidParameterException,
+                    PDFPasswordException);
+
+        /**
+         * Fait pivoter des pages d'un PDF.
+         * @param pdfFile  PDF source en bytes
+         * @param params   paramètres de rotation
+         * @param password mot de passe si PDF chiffré (vide si aucun)
+         * @return         PDF avec pages pivotées
+         */
+        ByteArray rotatePages(in ByteArray pdfFile,
+                              in RotationParams params,
+                              in string password)
+            raises (PDFProcessingException, InvalidParameterException,
+                    PDFPasswordException);
+
+        /**
+         * Extrait toutes les images embarquées d'un PDF.
+         * @param pdfFile  PDF source en bytes
+         * @param password mot de passe si PDF chiffré (vide si aucun)
+         * @return         EmbeddedImageResult
+         */
+        EmbeddedImageResult extractImages(in ByteArray pdfFile,
+                                          in string password)
+            raises (PDFProcessingException, PDFPasswordException);
+
+        // ======================================================
+        // UTILITAIRES
+        // ======================================================
+
+        /**
+         * Retourne les métadonnées d'un PDF.
+         * @param pdfFile  PDF source en bytes
+         * @param password mot de passe si PDF chiffré (vide si aucun)
+         * @return         PDFMetadata
+         */
+        PDFMetadata getMetadata(in ByteArray pdfFile,
+                                in string password)
+            raises (PDFProcessingException, PDFPasswordException);
+
+        /**
+         * Vérifie que le service est opérationnel (health check).
+         * @return "OK" si le service répond
+         */
+        string ping();
+    };
+
+};
+};
+};

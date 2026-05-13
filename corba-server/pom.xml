@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.pdfservice</groupId>
+    <artifactId>corba-server</artifactId>
+    <version>1.0.0</version>
+    <properties>
+        <java.version>11</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <dependencies>
+        <dependency><groupId>org.jacorb</groupId><artifactId>jacorb</artifactId><version>3.9</version></dependency>
+        <dependency><groupId>org.jacorb</groupId><artifactId>jacorb-omgapi</artifactId><version>3.9</version></dependency>
+        <dependency><groupId>org.jacorb</groupId><artifactId>jacorb-services</artifactId><version>3.9</version></dependency>
+        <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>2.0.29</version></dependency>
+        <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox-tools</artifactId><version>2.0.29</version></dependency>
+        <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-simple</artifactId><version>1.7.36</version></dependency>
+    </dependencies>
+    <repositories>
+        <repository><id>jacorb</id><url>https://www.jacorb.org/maven</url></repository>
+    </repositories>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <archive><manifest><mainClass>com.pdfservice.server.ServerMain</mainClass></manifest></archive>
+                    <descriptorRefs><descriptorRef>jar-with-dependencies</descriptorRef></descriptorRefs>
+                    <finalName>corba-server</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution><id>make-assembly</id><phase>package</phase><goals><goal>single</goal></goals></execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

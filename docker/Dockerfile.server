@@ -1,0 +1,29 @@
+FROM maven:3.9-eclipse-temurin-11-alpine AS builder
+WORKDIR /build
+COPY corba-server/pom.xml .
+COPY corba-server/libs ./libs
+RUN sed -i '/<dependencies>/a \
+    <dependency><groupId>org.glassfish.corba</groupId><artifactId>glassfish-corba-orb</artifactId><version>4.2.4</version></dependency> \
+    <dependency><groupId>org.glassfish.corba</groupId><artifactId>glassfish-corba-internal-api</artifactId><version>4.2.4</version></dependency> \
+    <dependency><groupId>org.glassfish.pfl</groupId><artifactId>pfl-basic</artifactId><version>4.0.1</version></dependency> \
+    <dependency><groupId>org.glassfish.pfl</groupId><artifactId>pfl-tf</artifactId><version>4.0.1</version></dependency> \
+    <dependency><groupId>org.glassfish.gmbal</groupId><artifactId>gmbal</artifactId><version>4.0.0</version></dependency>' pom.xml
+COPY corba-server/src ./src
+RUN mvn compile dependency:copy-dependencies -DoutputDirectory=target/dependency -q
+
+FROM eclipse-temurin:11-jre-alpine
+WORKDIR /app
+COPY --from=builder /build/target/classes /app/classes
+COPY --from=builder /build/target/dependency /app/libs
+COPY corba-server/libs/* /app/libs/
+
+RUN printf '#!/bin/sh\n\
+set -e\n\
+echo "[start] Lancement Serveur CORBA avec InitRef..."\n\
+exec java -cp "/app/classes:/app/libs/*" \
+  -Dorg.omg.CORBA.ORBClass=org.jacorb.orb.ORB \
+  -Dorg.omg.CORBA.ORBSingletonClass=org.jacorb.orb.ORBSingleton \
+  com.pdfservice.server.ServerMain \
+  -ORBInitRef NameService=corbaloc:iiop:naming:2809/NameService\n' > /app/start.sh && chmod +x /app/start.sh
+
+ENTRYPOINT ["/app/start.sh"]

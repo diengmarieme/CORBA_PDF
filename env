@@ -1,0 +1,13 @@
+# =============================================================
+# .env — Variables d'environnement pour docker-compose
+# Copiez ce fichier et adaptez selon votre environnement.
+# =============================================================
+
+# Ports exposés sur l'hôte (modifiables sans toucher docker-compose.yml)
+NAMING_PORT_EXPOSED=2809
+SERVER_PORT_EXPOSED=2810
+WEB_PORT_EXPOSED=8080
+FRONTEND_PORT_EXPOSED=80
+
+# Environnement (dev | prod)
+APP_ENV=dev

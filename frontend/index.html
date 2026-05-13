@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PDF Studio — Service CORBA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   VARIABLES & RESET
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg:          #0d0d0f;
+  --bg2:         #141417;
+  --bg3:         #1c1c21;
+  --border:      #2a2a32;
+  --border2:     #35353f;
+  --text:        #f0eff4;
+  --text2:       #9898a8;
+  --text3:       #5a5a6a;
+  --accent:      #e8593a;
+  --accent2:     #ff7c5c;
+  --accent-bg:   rgba(232,89,58,.12);
+  --accent-glow: rgba(232,89,58,.25);
+  --green:       #3ecf8e;
+  --green-bg:    rgba(62,207,142,.1);
+  --blue:        #4f8ef7;
+  --blue-bg:     rgba(79,142,247,.1);
+  --yellow:      #f5c842;
+  --card-shadow: 0 2px 20px rgba(0,0,0,.45);
+  --radius:      14px;
+  --radius-sm:   8px;
+  --font-head:   'Syne', sans-serif;
+  --font-body:   'DM Sans', sans-serif;
+  --sidebar-w:   260px;
+  --topbar-h:    60px;
+}
+[data-theme="light"] {
+  --bg:        #f5f4f8;
+  --bg2:       #ffffff;
+  --bg3:       #eeecf5;
+  --border:    #dddbe8;
+  --border2:   #c8c6d6;
+  --text:      #18171e;
+  --text2:     #5a5870;
+  --text3:     #9896a8;
+  --accent-bg: rgba(232,89,58,.08);
+  --card-shadow: 0 2px 16px rgba(0,0,0,.10);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════════ */
+.sidebar{
+  width:var(--sidebar-w);
+  min-height:100vh;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  top:0;left:0;
+  z-index:100;
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.sidebar-logo{
+  padding:22px 20px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.logo-icon{
+  width:36px;height:36px;
+  background:var(--accent);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.logo-icon svg{width:20px;height:20px;fill:#fff}
+.logo-text{font-family:var(--font-head);font-weight:800;font-size:1.15rem;letter-spacing:-.5px}
+.logo-text span{color:var(--accent)}
+
+.sidebar-section{
+  padding:8px 12px 4px;
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--text3);
+  margin-top:8px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;
+  margin:1px 8px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:background .15s,color .15s;
+  font-size:.88rem;
+  color:var(--text2);
+  user-select:none;
+}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--accent-bg);color:var(--accent);font-weight:500}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.85}
+.nav-badge{
+  margin-left:auto;
+  font-size:.65rem;
+  background:var(--accent);
+  color:#fff;
+  padding:1px 6px;
+  border-radius:20px;
+  font-weight:600;
+  letter-spacing:.02em;
+}
+
+.sidebar-bottom{
+  margin-top:auto;
+  padding:14px 16px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.theme-toggle{
+  width:36px;height:20px;
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  cursor:pointer;
+  position:relative;
+  transition:background .2s;
+  flex-shrink:0;
+}
+.theme-toggle::after{
+  content:'';
+  width:14px;height:14px;
+  background:var(--text2);
+  border-radius:50%;
+  position:absolute;
+  top:2px;left:2px;
+  transition:transform .2s,background .2s;
+}
+[data-theme="light"] .theme-toggle{background:var(--accent)}
+[data-theme="light"] .theme-toggle::after{transform:translateX(16px);background:#fff}
+.theme-label{font-size:.8rem;color:var(--text3)}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════════════════ */
+.main{
+  margin-left:var(--sidebar-w);
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+.topbar{
+  height:var(--topbar-h);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 28px;
+  gap:12px;
+  position:sticky;top:0;
+  background:var(--bg);
+  z-index:50;
+  backdrop-filter:blur(10px);
+}
+.topbar-title{
+  font-family:var(--font-head);
+  font-weight:700;
+  font-size:1.1rem;
+  flex:1;
+}
+.server-status{
+  display:flex;align-items:center;gap:6px;
+  font-size:.78rem;
+  color:var(--text3);
+}
+.status-dot{
+  width:7px;height:7px;
+  border-radius:50%;
+  background:var(--text3);
+  transition:background .3s;
+}
+.status-dot.online{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.offline{background:var(--accent)}
+
+.content{padding:28px;flex:1}
+
+/* ═══════════════════════════════════════════════════════════
+   TOOL PANEL
+═══════════════════════════════════════════════════════════ */
+.tool-panel{display:none;animation:fadeUp .25s ease}
+.tool-panel.active{display:block}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.panel-header{margin-bottom:24px}
+.panel-title{
+  font-family:var(--font-head);
+  font-weight:700;
+  font-size:1.6rem;
+  line-height:1.2;
+  margin-bottom:6px;
+}
+.panel-title span{color:var(--accent)}
+.panel-desc{font-size:.88rem;color:var(--text2);line-height:1.55}
+
+/* ═══════════════════════════════════════════════════════════
+   DROP ZONE
+═══════════════════════════════════════════════════════════ */
+.drop-zone{
+  border:2px dashed var(--border2);
+  border-radius:var(--radius);
+  padding:40px 24px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .2s,background .2s,transform .15s;
+  background:var(--bg2);
+  position:relative;
+  overflow:hidden;
+}
+.drop-zone::before{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,var(--accent-glow),transparent 70%);
+  opacity:0;
+  transition:opacity .3s;
+}
+.drop-zone:hover::before,.drop-zone.drag-over::before{opacity:1}
+.drop-zone:hover,.drop-zone.drag-over{
+  border-color:var(--accent);
+  transform:translateY(-1px);
+}
+.drop-zone.drag-over{background:var(--accent-bg)}
+.drop-icon{
+  width:52px;height:52px;
+  background:var(--bg3);
+  border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 14px;
+  transition:background .2s,transform .2s;
+}
+.drop-zone:hover .drop-icon{background:var(--accent-bg);transform:scale(1.05)}
+.drop-icon svg{width:24px;height:24px;stroke:var(--accent);fill:none;stroke-width:1.8}
+.drop-title{font-weight:600;font-size:.95rem;margin-bottom:4px}
+.drop-sub{font-size:.8rem;color:var(--text3)}
+.drop-btn{
+  display:inline-block;
+  margin-top:14px;
+  padding:8px 20px;
+  background:var(--accent);
+  color:#fff;
+  border-radius:8px;
+  font-size:.83rem;
+  font-weight:500;
+  transition:background .15s,transform .1s;
+}
+.drop-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.file-input{display:none}
+
+/* File list */
+.file-list{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.file-item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:8px 12px;
+  font-size:.83rem;
+  animation:fadeUp .2s ease;
+}
+.file-icon{
+  width:30px;height:30px;
+  background:var(--accent-bg);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.file-icon svg{width:16px;height:16px;fill:var(--accent)}
+.file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.file-size{color:var(--text3);font-size:.75rem;flex-shrink:0}
+.file-remove{
+  width:22px;height:22px;
+  border-radius:50%;
+  background:transparent;
+  border:none;
+  cursor:pointer;
+  color:var(--text3);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s;
+  flex-shrink:0;
+}
+.file-remove:hover{background:rgba(232,89,58,.15);color:var(--accent)}
+.file-remove svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+/* ═══════════════════════════════════════════════════════════
+   FORM CONTROLS
+═══════════════════════════════════════════════════════════ */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.form-grid.cols-1{grid-template-columns:1fr}
+.form-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label{font-size:.8rem;font-weight:500;color:var(--text2)}
+input[type=text],input[type=number],input[type=password],textarea,select{
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  color:var(--text);
+  padding:9px 12px;
+  border-radius:var(--radius-sm);
+  font-family:var(--font-body);
+  font-size:.88rem;
+  transition:border-color .15s,box-shadow .15s;
+  outline:none;
+  width:100%;
+}
+input[type=text]:focus,input[type=number]:focus,
+input[type=password]:focus,textarea:focus,select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-bg);
+}
+textarea{resize:vertical;min-height:100px;line-height:1.55}
+select option{background:var(--bg2)}
+
+.range-group{display:flex;align-items:center;gap:10px}
+input[type=range]{
+  flex:1;
+  -webkit-appearance:none;
+  height:4px;
+  background:var(--bg3);
+  border-radius:2px;
+  outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:16px;height:16px;
+  border-radius:50%;
+  background:var(--accent);
+  cursor:pointer;
+  box-shadow:0 0 0 3px var(--accent-bg);
+}
+.range-val{
+  min-width:38px;
+  text-align:center;
+  font-size:.82rem;
+  font-weight:600;
+  color:var(--accent);
+  background:var(--accent-bg);
+  border-radius:6px;
+  padding:2px 6px;
+}
+
+.checkbox-row{display:flex;align-items:center;gap:8px;cursor:pointer}
+input[type=checkbox]{
+  width:16px;height:16px;
+  accent-color:var(--accent);
+  cursor:pointer;
+}
+.checkbox-row span{font-size:.85rem;color:var(--text2)}
+
+.color-row{display:flex;align-items:center;gap:10px}
+input[type=color]{
+  width:36px;height:36px;
+  border:1px solid var(--border2);
+  border-radius:6px;
+  background:transparent;
+  cursor:pointer;
+  padding:2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUBMIT BUTTON
+═══════════════════════════════════════════════════════════ */
+.submit-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:22px;
+  padding:12px 28px;
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-sm);
+  font-family:var(--font-head);
+  font-size:.95rem;
+  font-weight:700;
+  cursor:pointer;
+  letter-spacing:.01em;
+  transition:background .15s,transform .1s,box-shadow .2s;
+  box-shadow:0 4px 18px var(--accent-glow);
+}
+.submit-btn:hover:not(:disabled){
+  background:var(--accent2);
+  transform:translateY(-1px);
+  box-shadow:0 6px 24px var(--accent-glow);
+}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed}
+.submit-btn svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.2}
+.submit-btn.loading svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══════════════════════════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════════════════════════ */
+.progress-wrap{
+  margin-top:18px;
+  display:none;
+  animation:fadeUp .2s ease;
+}
+.progress-wrap.visible{display:block}
+.progress-label{
+  display:flex;justify-content:space-between;
+  font-size:.78rem;color:var(--text3);
+  margin-bottom:6px;
+}
+.progress-bar-bg{
+  height:6px;
+  background:var(--bg3);
+  border-radius:3px;
+  overflow:hidden;
+}
+.progress-bar-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:3px;
+  width:0%;
+  transition:width .3s ease;
+}
+.progress-bar-fill.indeterminate{
+  width:40%;
+  animation:indeterminate 1.2s ease infinite;
+}
+@keyframes indeterminate{
+  0%{transform:translateX(-100%)}
+  100%{transform:translateX(350%)}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESULT AREA
+═══════════════════════════════════════════════════════════ */
+.result-area{
+  margin-top:22px;
+  display:none;
+  animation:fadeUp .25s ease;
+}
+.result-area.visible{display:block}
+
+.result-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.result-card-header{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.result-icon{
+  width:32px;height:32px;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.result-icon.success{background:var(--green-bg)}
+.result-icon.success svg{width:18px;height:18px;stroke:var(--green);fill:none;stroke-width:2.2}
+.result-icon.error{background:rgba(232,89,58,.15)}
+.result-icon.error svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2.2}
+.result-title{font-weight:600;font-size:.9rem;flex:1}
+.result-card-body{padding:16px 18px}
+
+.download-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 22px;
+  background:var(--green-bg);
+  border:1px solid rgba(62,207,142,.25);
+  color:var(--green);
+  border-radius:var(--radius-sm);
+  font-size:.88rem;
+  font-weight:500;
+  cursor:pointer;
+  transition:background .15s,transform .1s;
+  text-decoration:none;
+}
+.download-btn:hover{background:rgba(62,207,142,.18);transform:translateY(-1px)}
+.download-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}
+
+/* Text result */
+.text-result{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px;
+  font-size:.82rem;
+  line-height:1.65;
+  color:var(--text2);
+  max-height:260px;
+  overflow-y:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-family:monospace;
+}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:4px}
+.meta-item{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:10px 12px;
+}
+.meta-key{font-size:.72rem;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+.meta-val{font-size:.9rem;font-weight:500;word-break:break-all}
+
+/* PDF Preview canvas */
+.pdf-preview{
+  margin-top:14px;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  overflow:hidden;
+  max-height:320px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.pdf-preview canvas{max-width:100%;height:auto;display:block}
+
+/* Images preview */
+.images-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:10px;
+  margin-top:10px;
+}
+.images-grid img{
+  width:100%;
+  border-radius:6px;
+  border:1px solid var(--border);
+  object-fit:contain;
+  background:var(--bg3);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HOME / TOOL GRID
+═══════════════════════════════════════════════════════════ */
+.tools-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+  gap:14px;
+  margin-top:4px;
+}
+.tool-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px 16px;
+  cursor:pointer;
+  transition:border-color .2s,transform .15s,box-shadow .2s;
+  display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+}
+.tool-card:hover{
+  border-color:var(--accent);
+  transform:translateY(-2px);
+  box-shadow:var(--card-shadow);
+}
+.tool-card-icon{
+  width:40px;height:40px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+}
+.tool-card-icon svg{width:20px;height:20px}
+.tool-card-name{font-family:var(--font-head);font-weight:700;font-size:.9rem}
+.tool-card-desc{font-size:.75rem;color:var(--text3);line-height:1.45}
+.bonus-tag{
+  font-size:.65rem;
+  background:linear-gradient(90deg,#f5c842,#f59042);
+  color:#fff;
+  padding:2px 7px;
+  border-radius:10px;
+  font-weight:600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════════════════════ */
+.toast-container{
+  position:fixed;
+  top:20px;right:20px;
+  z-index:9999;
+  display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;
+}
+.toast{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px 16px;
+  font-size:.85rem;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  max-width:340px;
+  pointer-events:all;
+  animation:toastIn .3s cubic-bezier(.4,0,.2,1);
+  border-left:3px solid var(--text3);
+}
+.toast.success{border-left-color:var(--green)}
+.toast.error{border-left-color:var(--accent)}
+.toast.info{border-left-color:var(--blue)}
+@keyframes toastIn{
+  from{opacity:0;transform:translateX(20px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes toastOut{
+  to{opacity:0;transform:translateX(20px)}
+}
+.toast-icon{width:16px;height:16px;flex-shrink:0}
+.toast-icon svg{width:16px;height:16px;fill:none;stroke-width:2.2}
+.toast.success .toast-icon svg{stroke:var(--green)}
+.toast.error   .toast-icon svg{stroke:var(--accent)}
+.toast.info    .toast-icon svg{stroke:var(--blue)}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE SIDEBAR TOGGLE
+═══════════════════════════════════════════════════════════ */
+.menu-toggle{
+  display:none;
+  width:36px;height:36px;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:8px;
+  align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.menu-toggle svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:2}
+
+@media(max-width:720px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .menu-toggle{display:flex}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid.cols-3{grid-template-columns:1fr 1fr}
+  .tools-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8" style="fill:rgba(255,255,255,.4)"/></svg>
+    </div>
+    <div class="logo-text">PDF<span>Studio</span></div>
+  </div>
+
+  <div class="sidebar-section">Accueil</div>
+  <div class="nav-item active" data-panel="home" onclick="showPanel('home',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Toutes les fonctions
+  </div>
+
+  <div class="sidebar-section">Fonctions de base</div>
+  <div class="nav-item" data-panel="merge" onclick="showPanel('merge',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6H5a2 2 0 00-2 2v3m13 9h3a2 2 0 002-2v-3M8 18H5a2 2 0 01-2-2v-3m13-9h3a2 2 0 012 2v3"/></svg>
+    Fusionner
+  </div>
+  <div class="nav-item" data-panel="split" onclick="showPanel('split',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    Découper
+  </div>
+  <div class="nav-item" data-panel="extract" onclick="showPanel('extract',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Extraire pages
+  </div>
+  <div class="nav-item" data-panel="delete" onclick="showPanel('delete',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+    Supprimer pages
+  </div>
+  <div class="nav-item" data-panel="encrypt" onclick="showPanel('encrypt',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    Protéger
+  </div>
+  <div class="nav-item" data-panel="toimages" onclick="showPanel('toimages',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    PDF → Images
+  </div>
+  <div class="nav-item" data-panel="text" onclick="showPanel('text',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Extraire texte
+  </div>
+  <div class="nav-item" data-panel="create" onclick="showPanel('create',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    Créer PDF
+  </div>
+
+  <div class="sidebar-section">Bonus</div>
+  <div class="nav-item" data-panel="compress" onclick="showPanel('compress',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    Compresser <span class="nav-badge">+</span>
+  </div>
+  <div class="nav-item" data-panel="watermark" onclick="showPanel('watermark',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Filigrane <span class="nav-badge">+</span>
+  </div>
+  <div class="nav-item" data-panel="rotate" onclick="showPanel('rotate',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+    Rotation <span class="nav-badge">+</span>
+  </div>
+  <div class="nav-item" data-panel="extractimg" onclick="showPanel('extractimg',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Extraire images <span class="nav-badge">+</span>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Changer le thème"></div>
+    <span class="theme-label" id="themeLabel">Mode sombre</span>
+  </div>
+</nav>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div class="main">
+  <div class="topbar">
+    <div class="menu-toggle" onclick="toggleSidebar()">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </div>
+    <div class="topbar-title" id="topbarTitle">Toutes les fonctions</div>
+    <div class="server-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Vérification...</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ─── HOME PANEL ─── -->
+    <div class="tool-panel active" id="panel-home">
+      <div class="panel-header">
+        <div class="panel-title">Bienvenue sur <span>PDF Studio</span></div>
+        <div class="panel-desc">Architecture N-Tier · Serveur CORBA · Spring Boot · Choisissez une fonctionnalité.</div>
+      </div>
+      <div class="tools-grid">
+        <!-- les cartes sont générées par JS -->
+      </div>
+    </div>
+
+    <!-- ─── MERGE ─── -->
+    <div class="tool-panel" id="panel-merge">
+      <div class="panel-header">
+        <div class="panel-title">Fusionner des <span>PDFs</span></div>
+        <div class="panel-desc">Combinez plusieurs fichiers PDF en un seul document. Glissez-déposez vos fichiers dans l'ordre souhaité.</div>
+      </div>
+      <div class="drop-zone" id="dz-merge" onclick="triggerFile('merge')" ondragover="dzDragOver(event,'dz-merge')" ondragleave="dzDragLeave('dz-merge')" ondrop="dzDrop(event,'merge',true)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez vos PDFs ici</div>
+        <div class="drop-sub">ou cliquez pour sélectionner (minimum 2 fichiers)</div>
+        <div class="drop-btn" onclick="triggerFile('merge')">Choisir des fichiers</div>
+        <input type="file" id="fi-merge" class="file-input" multiple accept=".pdf" onchange="handleFiles(this,'merge',true)"/>
+      </div>
+      <div class="file-list" id="fl-merge"></div>
+      <button class="submit-btn" onclick="submitMerge()" id="btn-merge">
+        <svg viewBox="0 0 24 24"><path d="M8 6H5a2 2 0 00-2 2v3m13 9h3a2 2 0 002-2v-3M8 18H5a2 2 0 01-2-2v-3m13-9h3a2 2 0 012 2v3"/></svg>
+        Fusionner
+      </button>
+      <div class="progress-wrap" id="pg-merge"><div class="progress-label"><span id="pg-merge-label">Fusion en cours...</span><span></span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-merge"></div>
+    </div>
+
+    <!-- ─── SPLIT ─── -->
+    <div class="tool-panel" id="panel-split">
+      <div class="panel-header">
+        <div class="panel-title">Découper un <span>PDF</span></div>
+        <div class="panel-desc">Divisez un PDF en plusieurs fichiers. Le résultat est téléchargé en ZIP si plus d'une partie.</div>
+      </div>
+      <div class="drop-zone" id="dz-split" onclick="triggerFile('split')" ondragover="dzDragOver(event,'dz-split')" ondragleave="dzDragLeave('dz-split')" ondrop="dzDrop(event,'split',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-sub">ou cliquez pour sélectionner</div>
+        <div class="drop-btn" onclick="triggerFile('split')">Choisir un fichier</div>
+        <input type="file" id="fi-split" class="file-input" accept=".pdf" onchange="handleFiles(this,'split',false)"/>
+      </div>
+      <div class="file-list" id="fl-split"></div>
+      <div class="form-grid cols-1" style="margin-top:16px">
+        <div class="form-group">
+          <label>Pages par partie</label>
+          <input type="number" id="split-pages" value="1" min="1" max="999"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('split')" id="btn-split">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Découper
+      </button>
+      <div class="progress-wrap" id="pg-split"><div class="progress-label"><span>Découpage en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-split"></div>
+    </div>
+
+    <!-- ─── EXTRACT PAGES ─── -->
+    <div class="tool-panel" id="panel-extract">
+      <div class="panel-header">
+        <div class="panel-title">Extraire des <span>pages</span></div>
+        <div class="panel-desc">Sélectionnez les pages à extraire. Exemple : <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">1,3,5-8</code></div>
+      </div>
+      <div class="drop-zone" id="dz-extract" onclick="triggerFile('extract')" ondragover="dzDragOver(event,'dz-extract')" ondragleave="dzDragLeave('dz-extract')" ondrop="dzDrop(event,'extract',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-sub">ou cliquez pour sélectionner</div>
+        <div class="drop-btn" onclick="triggerFile('extract')">Choisir un fichier</div>
+        <input type="file" id="fi-extract" class="file-input" accept=".pdf" onchange="handleFiles(this,'extract',false)"/>
+      </div>
+      <div class="file-list" id="fl-extract"></div>
+      <div class="form-grid cols-1" style="margin-top:16px">
+        <div class="form-group">
+          <label>Pages à extraire (ex: 1,3,5-8)</label>
+          <input type="text" id="extract-pages" placeholder="1,3,5-8"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('extract')" id="btn-extract">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Extraire
+      </button>
+      <div class="progress-wrap" id="pg-extract"><div class="progress-label"><span>Extraction en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-extract"></div>
+    </div>
+
+    <!-- ─── DELETE PAGES ─── -->
+    <div class="tool-panel" id="panel-delete">
+      <div class="panel-header">
+        <div class="panel-title">Supprimer des <span>pages</span></div>
+        <div class="panel-desc">Supprimez des pages spécifiques de votre PDF.</div>
+      </div>
+      <div class="drop-zone" id="dz-delete" onclick="triggerFile('delete')" ondragover="dzDragOver(event,'dz-delete')" ondragleave="dzDragLeave('dz-delete')" ondrop="dzDrop(event,'delete',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('delete')">Choisir un fichier</div>
+        <input type="file" id="fi-delete" class="file-input" accept=".pdf" onchange="handleFiles(this,'delete',false)"/>
+      </div>
+      <div class="file-list" id="fl-delete"></div>
+      <div class="form-grid cols-1" style="margin-top:16px">
+        <div class="form-group">
+          <label>Pages à supprimer (ex: 2,4,6-9)</label>
+          <input type="text" id="delete-pages" placeholder="2,4"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('delete')" id="btn-delete">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        Supprimer
+      </button>
+      <div class="progress-wrap" id="pg-delete"><div class="progress-label"><span>Suppression en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-delete"></div>
+    </div>
+
+    <!-- ─── ENCRYPT ─── -->
+    <div class="tool-panel" id="panel-encrypt">
+      <div class="panel-header">
+        <div class="panel-title">Protéger par <span>mot de passe</span></div>
+        <div class="panel-desc">Chiffrez votre PDF avec AES-256.</div>
+      </div>
+      <div class="drop-zone" id="dz-encrypt" onclick="triggerFile('encrypt')" ondragover="dzDragOver(event,'dz-encrypt')" ondragleave="dzDragLeave('dz-encrypt')" ondrop="dzDrop(event,'encrypt',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('encrypt')">Choisir un fichier</div>
+        <input type="file" id="fi-encrypt" class="file-input" accept=".pdf" onchange="handleFiles(this,'encrypt',false)"/>
+      </div>
+      <div class="file-list" id="fl-encrypt"></div>
+      <div class="form-grid" style="margin-top:16px">
+        <div class="form-group">
+          <label>Mot de passe utilisateur *</label>
+          <input type="password" id="encrypt-user" placeholder="••••••••"/>
+        </div>
+        <div class="form-group">
+          <label>Mot de passe propriétaire (optionnel)</label>
+          <input type="password" id="encrypt-owner" placeholder="••••••••"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('encrypt')" id="btn-encrypt">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Chiffrer (AES-256)
+      </button>
+      <div class="progress-wrap" id="pg-encrypt"><div class="progress-label"><span>Chiffrement en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-encrypt"></div>
+    </div>
+
+    <!-- ─── TO IMAGES ─── -->
+    <div class="tool-panel" id="panel-toimages">
+      <div class="panel-header">
+        <div class="panel-title">Convertir en <span>Images</span></div>
+        <div class="panel-desc">Chaque page du PDF devient une image PNG. Résultat en ZIP si plusieurs pages.</div>
+      </div>
+      <div class="drop-zone" id="dz-toimages" onclick="triggerFile('toimages')" ondragover="dzDragOver(event,'dz-toimages')" ondragleave="dzDragLeave('dz-toimages')" ondrop="dzDrop(event,'toimages',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('toimages')">Choisir un fichier</div>
+        <input type="file" id="fi-toimages" class="file-input" accept=".pdf" onchange="handleFiles(this,'toimages',false)"/>
+      </div>
+      <div class="file-list" id="fl-toimages"></div>
+      <div class="form-grid" style="margin-top:16px">
+        <div class="form-group">
+          <label>Résolution (DPI)</label>
+          <div class="range-group">
+            <input type="range" id="toimages-dpi" min="72" max="300" value="150" oninput="document.getElementById('toimages-dpi-val').textContent=this.value"/>
+            <span class="range-val" id="toimages-dpi-val">150</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mot de passe (si protégé)</label>
+          <input type="password" id="toimages-pass" placeholder="optionnel"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('toimages')" id="btn-toimages">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Convertir
+      </button>
+      <div class="progress-wrap" id="pg-toimages"><div class="progress-label"><span>Conversion en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-toimages"></div>
+    </div>
+
+    <!-- ─── EXTRACT TEXT ─── -->
+    <div class="tool-panel" id="panel-text">
+      <div class="panel-header">
+        <div class="panel-title">Extraire le <span>texte</span></div>
+        <div class="panel-desc">Récupérez tout le contenu textuel de votre PDF, page par page.</div>
+      </div>
+      <div class="drop-zone" id="dz-text" onclick="triggerFile('text')" ondragover="dzDragOver(event,'dz-text')" ondragleave="dzDragLeave('dz-text')" ondrop="dzDrop(event,'text',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('text')">Choisir un fichier</div>
+        <input type="file" id="fi-text" class="file-input" accept=".pdf" onchange="handleFiles(this,'text',false)"/>
+      </div>
+      <div class="file-list" id="fl-text"></div>
+      <div class="form-grid cols-1" style="margin-top:16px">
+        <div class="form-group">
+          <label>Mot de passe (si protégé)</label>
+          <input type="password" id="text-pass" placeholder="optionnel"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('text')" id="btn-text">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Extraire le texte
+      </button>
+      <div class="progress-wrap" id="pg-text"><div class="progress-label"><span>Extraction en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-text"></div>
+    </div>
+
+    <!-- ─── CREATE PDF ─── -->
+    <div class="tool-panel" id="panel-create">
+      <div class="panel-header">
+        <div class="panel-title">Créer un <span>nouveau PDF</span></div>
+        <div class="panel-desc">Générez un PDF à partir d'un contenu texte.</div>
+      </div>
+      <div class="form-grid" style="margin-top:4px">
+        <div class="form-group">
+          <label>Titre du document *</label>
+          <input type="text" id="create-title" placeholder="Mon document PDF"/>
+        </div>
+        <div class="form-group">
+          <label>Auteur</label>
+          <input type="text" id="create-author" placeholder="Votre nom"/>
+        </div>
+        <div class="form-group full">
+          <label>Contenu (sauts de ligne supportés)</label>
+          <textarea id="create-content" placeholder="Saisissez ici le contenu de votre PDF...&#10;&#10;Chaque saut de ligne devient un nouveau paragraphe." style="min-height:160px"></textarea>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('create')" id="btn-create">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Créer le PDF
+      </button>
+      <div class="progress-wrap" id="pg-create"><div class="progress-label"><span>Création en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-create"></div>
+    </div>
+
+    <!-- ─── COMPRESS (BONUS) ─── -->
+    <div class="tool-panel" id="panel-compress">
+      <div class="panel-header">
+        <div class="panel-title">Compresser un <span>PDF</span></div>
+        <div class="panel-desc">Réduisez la taille de votre PDF en optimisant les images embarquées.</div>
+      </div>
+      <div class="drop-zone" id="dz-compress" onclick="triggerFile('compress')" ondragover="dzDragOver(event,'dz-compress')" ondragleave="dzDragLeave('dz-compress')" ondrop="dzDrop(event,'compress',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('compress')">Choisir un fichier</div>
+        <input type="file" id="fi-compress" class="file-input" accept=".pdf" onchange="handleFiles(this,'compress',false)"/>
+      </div>
+      <div class="file-list" id="fl-compress"></div>
+      <div class="form-grid" style="margin-top:16px">
+        <div class="form-group">
+          <label>DPI cible des images</label>
+          <div class="range-group">
+            <input type="range" id="compress-dpi" min="50" max="200" value="120" oninput="document.getElementById('compress-dpi-val').textContent=this.value"/>
+            <span class="range-val" id="compress-dpi-val">120</span>
+          </div>
+        </div>
+        <div class="form-group" style="justify-content:flex-end;padding-top:6px">
+          <label class="checkbox-row"><input type="checkbox" id="compress-imgs" checked/><span>Compresser les images</span></label>
+          <label class="checkbox-row" style="margin-top:6px"><input type="checkbox" id="compress-meta"/><span>Supprimer les métadonnées</span></label>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('compress')" id="btn-compress">
+        <svg viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        Compresser
+      </button>
+      <div class="progress-wrap" id="pg-compress"><div class="progress-label"><span>Compression en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-compress"></div>
+    </div>
+
+    <!-- ─── WATERMARK (BONUS) ─── -->
+    <div class="tool-panel" id="panel-watermark">
+      <div class="panel-header">
+        <div class="panel-title">Ajouter un <span>filigrane</span></div>
+        <div class="panel-desc">Apposez un texte en filigrane sur vos pages avec opacité et rotation personnalisables.</div>
+      </div>
+      <div class="drop-zone" id="dz-watermark" onclick="triggerFile('watermark')" ondragover="dzDragOver(event,'dz-watermark')" ondragleave="dzDragLeave('dz-watermark')" ondrop="dzDrop(event,'watermark',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('watermark')">Choisir un fichier</div>
+        <input type="file" id="fi-watermark" class="file-input" accept=".pdf" onchange="handleFiles(this,'watermark',false)"/>
+      </div>
+      <div class="file-list" id="fl-watermark"></div>
+      <div class="form-grid" style="margin-top:16px">
+        <div class="form-group full">
+          <label>Texte du filigrane *</label>
+          <input type="text" id="wm-text" placeholder="CONFIDENTIEL"/>
+        </div>
+        <div class="form-group">
+          <label>Taille de police</label>
+          <div class="range-group">
+            <input type="range" id="wm-size" min="12" max="120" value="48" oninput="document.getElementById('wm-size-val').textContent=this.value+'px'"/>
+            <span class="range-val" id="wm-size-val">48px</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Opacité</label>
+          <div class="range-group">
+            <input type="range" id="wm-opacity" min="0.05" max="1" step="0.05" value="0.3" oninput="document.getElementById('wm-opacity-val').textContent=Math.round(this.value*100)+'%'"/>
+            <span class="range-val" id="wm-opacity-val">30%</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Rotation (degrés)</label>
+          <div class="range-group">
+            <input type="range" id="wm-rotation" min="0" max="360" value="45" oninput="document.getElementById('wm-rotation-val').textContent=this.value+'°'"/>
+            <span class="range-val" id="wm-rotation-val">45°</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Couleur</label>
+          <div class="color-row">
+            <input type="color" id="wm-color" value="#808080"/>
+            <span style="font-size:.8rem;color:var(--text3)">Couleur du filigrane</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Pages ciblées (vide = toutes)</label>
+          <input type="text" id="wm-pages" placeholder="1,3,5 ou vide pour toutes"/>
+        </div>
+        <div class="form-group">
+          <label>Mot de passe PDF (si protégé)</label>
+          <input type="password" id="wm-pass" placeholder="optionnel"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('watermark')" id="btn-watermark">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Appliquer le filigrane
+      </button>
+      <div class="progress-wrap" id="pg-watermark"><div class="progress-label"><span>Application du filigrane...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-watermark"></div>
+    </div>
+
+    <!-- ─── ROTATE (BONUS) ─── -->
+    <div class="tool-panel" id="panel-rotate">
+      <div class="panel-header">
+        <div class="panel-title">Rotation des <span>pages</span></div>
+        <div class="panel-desc">Pivotez des pages de votre PDF à 90°, 180° ou 270°.</div>
+      </div>
+      <div class="drop-zone" id="dz-rotate" onclick="triggerFile('rotate')" ondragover="dzDragOver(event,'dz-rotate')" ondragleave="dzDragLeave('dz-rotate')" ondrop="dzDrop(event,'rotate',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('rotate')">Choisir un fichier</div>
+        <input type="file" id="fi-rotate" class="file-input" accept=".pdf" onchange="handleFiles(this,'rotate',false)"/>
+      </div>
+      <div class="file-list" id="fl-rotate"></div>
+      <div class="form-grid" style="margin-top:16px">
+        <div class="form-group">
+          <label>Angle de rotation</label>
+          <select id="rotate-degrees">
+            <option value="90">90° (sens horaire)</option>
+            <option value="180">180° (retournement)</option>
+            <option value="270">270° (sens anti-horaire)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pages (vide = toutes)</label>
+          <input type="text" id="rotate-pages" placeholder="1,3,5 ou vide pour toutes"/>
+        </div>
+        <div class="form-group">
+          <label>Mot de passe PDF (si protégé)</label>
+          <input type="password" id="rotate-pass" placeholder="optionnel"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('rotate')" id="btn-rotate">
+        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        Appliquer la rotation
+      </button>
+      <div class="progress-wrap" id="pg-rotate"><div class="progress-label"><span>Rotation en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-rotate"></div>
+    </div>
+
+    <!-- ─── EXTRACT IMAGES (BONUS) ─── -->
+    <div class="tool-panel" id="panel-extractimg">
+      <div class="panel-header">
+        <div class="panel-title">Extraire les <span>images</span></div>
+        <div class="panel-desc">Récupérez toutes les images embarquées dans votre PDF. Résultat en ZIP si plusieurs images.</div>
+      </div>
+      <div class="drop-zone" id="dz-extractimg" onclick="triggerFile('extractimg')" ondragover="dzDragOver(event,'dz-extractimg')" ondragleave="dzDragLeave('dz-extractimg')" ondrop="dzDrop(event,'extractimg',false)">
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-title">Glissez votre PDF ici</div>
+        <div class="drop-btn" onclick="triggerFile('extractimg')">Choisir un fichier</div>
+        <input type="file" id="fi-extractimg" class="file-input" accept=".pdf" onchange="handleFiles(this,'extractimg',false)"/>
+      </div>
+      <div class="file-list" id="fl-extractimg"></div>
+      <div class="form-grid cols-1" style="margin-top:16px">
+        <div class="form-group">
+          <label>Mot de passe (si protégé)</label>
+          <input type="password" id="extractimg-pass" placeholder="optionnel"/>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitOp('extractimg')" id="btn-extractimg">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Extraire les images
+      </button>
+      <div class="progress-wrap" id="pg-extractimg"><div class="progress-label"><span>Extraction en cours...</span></div><div class="progress-bar-bg"><div class="progress-bar-fill indeterminate"></div></div></div>
+      <div class="result-area" id="res-extractimg"></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ═══════════════════ TOASTS ═══════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+function triggerFile(id) {
+  var el = document.getElementById('fi-' + id);
+  if (el) { el.value = ''; el.click(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const API = '/api/pdf';
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ═══════════════════════════════════════════════════════════
+// FILE STORES
+// ═══════════════════════════════════════════════════════════
+const fileStores = {};
+
+// ═══════════════════════════════════════════════════════════
+// TOOL DEFINITIONS (pour la home grid)
+// ═══════════════════════════════════════════════════════════
+const tools = [
+  {id:'merge',    name:'Fusionner',        desc:'Combinez plusieurs PDFs en un',     color:'#e8593a', icon:'M8 6H5a2 2 0 00-2 2v3m13 9h3a2 2 0 002-2v-3M8 18H5a2 2 0 01-2-2v-3m13-9h3a2 2 0 012 2v3'},
+  {id:'split',    name:'Découper',         desc:'Divisez un PDF en parties',          color:'#4f8ef7', icon:'M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6'},
+  {id:'extract',  name:'Extraire pages',   desc:'Sélectionnez des pages précises',    color:'#3ecf8e', icon:'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11'},
+  {id:'delete',   name:'Supprimer pages',  desc:'Retirez des pages de votre PDF',     color:'#f5c842', icon:'M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6'},
+  {id:'encrypt',  name:'Protéger',         desc:'Chiffrement AES-256 par mdp',        color:'#b06cf7', icon:'M21 11V7a2 2 0 00-2-2H5a2 2 0 00-2 2v4m18 0a2 2 0 01-2 2H5a2 2 0 01-2-2m18 0v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6'},
+  {id:'toimages', name:'PDF → Images',     desc:'Convertissez en PNG haute résolution',color:'#f5a623',icon:'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5z'},
+  {id:'text',     name:'Extraire texte',   desc:'Récupérez tout le texte du PDF',     color:'#3ecf8e', icon:'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'},
+  {id:'create',   name:'Créer PDF',        desc:'Générez un PDF depuis du texte',     color:'#e8593a', icon:'M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z'},
+  {id:'compress', name:'Compresser',       desc:'Réduisez la taille du fichier',      color:'#4f8ef7', icon:'M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7', bonus:true},
+  {id:'watermark',name:'Filigrane',        desc:'Apposez un texte en transparence',   color:'#3ecf8e', icon:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', bonus:true},
+  {id:'rotate',   name:'Rotation',         desc:'Pivotez des pages à 90/180/270°',   color:'#f5c842', icon:'M23 4v6h-6M20.49 15a9 9 0 11-2.12-9.36L23 10', bonus:true},
+  {id:'extractimg',name:'Extraire images', desc:'Récupérez les images embarquées',   color:'#b06cf7', icon:'M7 10l5 5 5-5M12 15V3', bonus:true},
+];
+
+// Génère la grille d'accueil
+(function buildHomeGrid(){
+  const grid = document.querySelector('#panel-home .tools-grid');
+  grid.innerHTML = tools.map(t => `
+    <div class="tool-card" onclick="showPanel('${t.id}',null)">
+      <div class="tool-card-icon" style="background:${t.color}22">
+        <svg viewBox="0 0 24 24" fill="none" stroke="${t.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="${t.icon}"/>
+        </svg>
+      </div>
+      <div>
+        <div class="tool-card-name">${t.name} ${t.bonus?'<span class="bonus-tag">BONUS</span>':''}</div>
+        <div class="tool-card-desc">${t.desc}</div>
+      </div>
+    </div>
+  `).join('');
+})();
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const panelTitles = {
+  home:'Toutes les fonctions', merge:'Fusionner', split:'Découper',
+  extract:'Extraire pages', delete:'Supprimer pages', encrypt:'Protéger',
+  toimages:'PDF → Images', text:'Extraire texte', create:'Créer PDF',
+  compress:'Compresser', watermark:'Filigrane', rotate:'Rotation',
+  extractimg:'Extraire images'
+};
+
+function showPanel(id, navEl) {
+  document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('topbarTitle').textContent = panelTitles[id] || id;
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const target = navEl || document.querySelector(`.nav-item[data-panel="${id}"]`);
+  if(target) target.classList.add('active');
+
+  // ferme sidebar mobile
+  if(window.innerWidth <= 720) document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════
+function toggleTheme(){
+  const html = document.documentElement;
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? 'light' : 'dark';
+  document.getElementById('themeLabel').textContent = isDark ? 'Mode clair' : 'Mode sombre';
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════════════════════
+function dzDragOver(e, dzId){
+  e.preventDefault();
+  document.getElementById(dzId).classList.add('drag-over');
+}
+function dzDragLeave(dzId){
+  document.getElementById(dzId).classList.remove('drag-over');
+}
+function dzDrop(e, op, multi){
+  e.preventDefault();
+  dzDragLeave('dz-'+op);
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type==='application/pdf');
+  if(!files.length){ toast('Seuls les fichiers PDF sont acceptés.','error'); return; }
+  addFiles(op, multi ? files : [files[0]]);
+}
+function handleFiles(input, op, multi){
+  const files = Array.from(input.files).filter(f => f.type==='application/pdf');
+  addFiles(op, multi ? files : [files[0]]);
+  input.value = '';
+}
+
+function addFiles(op, newFiles){
+  if(!fileStores[op]) fileStores[op] = [];
+  if(document.getElementById('fl-'+op) === null) return;
+  // Pour single-file ops, on remplace
+  const multi = (op==='merge');
+  if(!multi) fileStores[op] = [];
+  newFiles.forEach(f => fileStores[op].push(f));
+  renderFileList(op);
+}
+
+function renderFileList(op){
+  const list = document.getElementById('fl-'+op);
+  if(!list) return;
+  const files = fileStores[op] || [];
+  list.innerHTML = files.map((f,i) => `
+    <div class="file-item">
+      <div class="file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="currentColor"/></svg></div>
+      <span class="file-name" title="${f.name}">${f.name}</span>
+      <span class="file-size">${formatSize(f.size)}</span>
+      <button class="file-remove" onclick="removeFile('${op}',${i})">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+function removeFile(op, idx){
+  fileStores[op].splice(idx,1);
+  renderFileList(op);
+}
+function formatSize(b){
+  if(b<1024) return b+'B';
+  if(b<1048576) return (b/1024).toFixed(1)+'KB';
+  return (b/1048576).toFixed(1)+'MB';
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROGRESS
+// ═══════════════════════════════════════════════════════════
+function showProgress(op){ document.getElementById('pg-'+op).classList.add('visible'); }
+function hideProgress(op){ document.getElementById('pg-'+op).classList.remove('visible'); }
+
+// ═══════════════════════════════════════════════════════════
+// SUBMIT HANDLERS
+// ═══════════════════════════════════════════════════════════
+async function submitMerge(){
+  const files = fileStores['merge'] || [];
+  if(files.length < 2){ toast('Ajoutez au moins 2 fichiers PDF.','error'); return; }
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  await callApi('merge', fd, 'merged.pdf', 'application/pdf');
+}
+
+async function submitOp(op){
+  const fd = new FormData();
+
+  // Fichier source (sauf create)
+  if(op !== 'create'){
+    const files = fileStores[op] || [];
+    if(!files.length){ toast('Ajoutez un fichier PDF.','error'); return; }
+    fd.append('file', files[0]);
+  }
+
+  // Paramètres spécifiques
+  if(op==='split'){
+    fd.append('pagesPerPart', document.getElementById('split-pages').value);
+  } else if(op==='extract'){
+    const p = document.getElementById('extract-pages').value.trim();
+    if(!p){ toast('Saisissez les numéros de pages.','error'); return; }
+    fd.append('pages', p);
+  } else if(op==='delete'){
+    const p = document.getElementById('delete-pages').value.trim();
+    if(!p){ toast('Saisissez les numéros de pages.','error'); return; }
+    fd.append('pages', p);
+  } else if(op==='encrypt'){
+    const pw = document.getElementById('encrypt-user').value;
+    if(!pw){ toast('Saisissez un mot de passe.','error'); return; }
+    fd.append('userPassword', pw);
+    fd.append('ownerPassword', document.getElementById('encrypt-owner').value);
+  } else if(op==='toimages'){
+    fd.append('dpi', document.getElementById('toimages-dpi').value);
+    fd.append('password', document.getElementById('toimages-pass').value);
+  } else if(op==='text'){
+    fd.append('password', document.getElementById('text-pass').value);
+  } else if(op==='create'){
+    const title = document.getElementById('create-title').value.trim();
+    const content = document.getElementById('create-content').value.trim();
+    if(!title){ toast('Saisissez un titre.','error'); return; }
+    if(!content){ toast('Saisissez un contenu.','error'); return; }
+    fd.append('title', title);
+    fd.append('content', content);
+    fd.append('author', document.getElementById('create-author').value || 'PDF Service');
+  } else if(op==='compress'){
+    fd.append('dpi', document.getElementById('compress-dpi').value);
+    fd.append('compressImages', document.getElementById('compress-imgs').checked);
+    fd.append('removeMetadata', document.getElementById('compress-meta').checked);
+  } else if(op==='watermark'){
+    const txt = document.getElementById('wm-text').value.trim();
+    if(!txt){ toast('Saisissez le texte du filigrane.','error'); return; }
+    fd.append('text', txt);
+    fd.append('fontSize', document.getElementById('wm-size').value);
+    fd.append('opacity', document.getElementById('wm-opacity').value);
+    fd.append('rotation', document.getElementById('wm-rotation').value);
+    const hex = document.getElementById('wm-color').value;
+    fd.append('colorR', parseInt(hex.slice(1,3),16));
+    fd.append('colorG', parseInt(hex.slice(3,5),16));
+    fd.append('colorB', parseInt(hex.slice(5,7),16));
+    fd.append('pages', document.getElementById('wm-pages').value);
+    fd.append('password', document.getElementById('wm-pass').value);
+  } else if(op==='rotate'){
+    fd.append('degrees', document.getElementById('rotate-degrees').value);
+    fd.append('pages', document.getElementById('rotate-pages').value);
+    fd.append('password', document.getElementById('rotate-pass').value);
+  } else if(op==='extractimg'){
+    fd.append('password', document.getElementById('extractimg-pass').value);
+  }
+
+  // Endpoints mapping
+  const endpoints = {
+    split:'split', extract:'extract-pages', delete:'delete-pages',
+    encrypt:'encrypt', toimages:'to-images', text:'extract-text',
+    create:'create', compress:'compress', watermark:'watermark',
+    rotate:'rotate', extractimg:'extract-images'
+  };
+
+  const contentTypes = {
+    split:'application/zip', extract:'application/pdf', delete:'application/pdf',
+    encrypt:'application/pdf', toimages:'application/zip', text:'json',
+    create:'application/pdf', compress:'application/pdf', watermark:'application/pdf',
+    rotate:'application/pdf', extractimg:'application/zip'
+  };
+
+  const filenames = {
+    split:'split_result.zip', extract:'extracted.pdf', delete:'pages_deleted.pdf',
+    encrypt:'encrypted.pdf', toimages:'pdf_images.zip', create:'document.pdf',
+    compress:'compressed.pdf', watermark:'watermarked.pdf',
+    rotate:'rotated.pdf', extractimg:'images.zip'
+  };
+
+  await callApi(endpoints[op], fd, filenames[op], contentTypes[op], op);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CORE API CALL
+// ═══════════════════════════════════════════════════════════
+async function callApi(endpoint, formData, filename, expectedType, op){
+  op = op || endpoint;
+  const btn = document.getElementById('btn-'+op);
+  if(btn){ btn.disabled = true; btn.classList.add('loading'); }
+  showProgress(op);
+  clearResult(op);
+
+  try {
+    const res = await fetch(`${API}/${endpoint}`, { method:'POST', body:formData });
+
+    if(expectedType === 'json'){
+      const data = await res.json();
+      hideProgress(op);
+      if(btn){ btn.disabled=false; btn.classList.remove('loading'); }
+      if(!res.ok || data.error){ showError(op, data.message||'Erreur serveur'); return; }
+      showTextResult(op, data);
+      return;
+    }
+
+    if(!res.ok){
+      const errData = await res.json().catch(()=>({message:'Erreur serveur'}));
+      hideProgress(op);
+      if(btn){ btn.disabled=false; btn.classList.remove('loading'); }
+      showError(op, errData.message || 'Erreur ' + res.status);
+      return;
+    }
+
+    // Récupère le nom de fichier depuis Content-Disposition si dispo
+    const disp = res.headers.get('content-disposition');
+    if(disp){
+      const m = disp.match(/filename="?([^"]+)"?/);
+      if(m) filename = m[1];
+    }
+
+    // Infos de compression
+    const origSize = res.headers.get('X-Original-Size');
+    const compSize = res.headers.get('X-Compressed-Size');
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+
+    hideProgress(op);
+    if(btn){ btn.disabled=false; btn.classList.remove('loading'); }
+
+    showFileResult(op, url, filename, blob, origSize, compSize);
+
+  } catch(e){
+    hideProgress(op);
+    if(btn){ btn.disabled=false; btn.classList.remove('loading'); }
+    showError(op, 'Impossible de joindre le serveur : ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESULT RENDERERS
+// ═══════════════════════════════════════════════════════════
+function clearResult(op){
+  const el = document.getElementById('res-'+op);
+  if(el){ el.innerHTML=''; el.classList.remove('visible'); }
+}
+
+function showError(op, msg){
+  const el = document.getElementById('res-'+op);
+  if(!el) return;
+  el.innerHTML = `
+    <div class="result-card">
+      <div class="result-card-header">
+        <div class="result-icon error">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="result-title">Erreur de traitement</div>
+      </div>
+      <div class="result-card-body">
+        <p style="color:var(--text2);font-size:.85rem">${msg}</p>
+      </div>
+    </div>`;
+  el.classList.add('visible');
+  toast(msg, 'error');
+}
+
+async function showFileResult(op, url, filename, blob, origSize, compSize){
+  const el = document.getElementById('res-'+op);
+  if(!el) return;
+
+  let extraHtml = '';
+  if(origSize && compSize){
+    const ratio = Math.round((1 - compSize/origSize)*100);
+    extraHtml = `
+      <div class="meta-grid" style="margin-top:12px">
+        <div class="meta-item"><div class="meta-key">Avant</div><div class="meta-val">${formatSize(parseInt(origSize))}</div></div>
+        <div class="meta-item"><div class="meta-key">Après</div><div class="meta-val">${formatSize(parseInt(compSize))}</div></div>
+        <div class="meta-item"><div class="meta-key">Gain</div><div class="meta-val" style="color:var(--green)">${ratio}%</div></div>
+      </div>`;
+  }
+
+  // Prévisualisation PDF (si PDF unique)
+  let previewHtml = '';
+  if(blob.type === 'application/pdf'){
+    previewHtml = `<div class="pdf-preview" id="preview-${op}"><canvas></canvas></div>`;
+  }
+
+  el.innerHTML = `
+    <div class="result-card">
+      <div class="result-card-header">
+        <div class="result-icon success">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="result-title">Traitement réussi — ${filename}</div>
+      </div>
+      <div class="result-card-body">
+        <a class="download-btn" href="${url}" download="${filename}">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Télécharger ${filename}
+        </a>
+        ${extraHtml}
+        ${previewHtml}
+      </div>
+    </div>`;
+  el.classList.add('visible');
+
+  // Rendu PDF preview
+  if(blob.type === 'application/pdf'){
+    try {
+      const ab = await blob.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data: new Uint8Array(ab)}).promise;
+      const page = await pdf.getPage(1);
+      const vp = page.getViewport({scale: 0.6});
+      const canvas = el.querySelector(`#preview-${op} canvas`);
+      canvas.width  = vp.width;
+      canvas.height = vp.height;
+      await page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+    } catch(e){ /* PDF.js non supporté, on ignore */ }
+  }
+
+  toast('Fichier traité avec succès !', 'success');
+  // Auto-trigger download
+  const link = el.querySelector('.download-btn');
+  if(link) link.click();
+}
+
+function showTextResult(op, data){
+  const el = document.getElementById('res-'+op);
+  if(!el) return;
+  el.innerHTML = `
+    <div class="result-card">
+      <div class="result-card-header">
+        <div class="result-icon success">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="result-title">${data.pageCount} page(s) — Texte extrait</div>
+      </div>
+      <div class="result-card-body">
+        <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">
+          <button onclick="copyText('${op}')" style="padding:6px 14px;background:var(--blue-bg);border:1px solid rgba(79,142,247,.25);color:var(--blue);border-radius:6px;cursor:pointer;font-size:.8rem">
+            Copier le texte
+          </button>
+          <span style="font-size:.75rem;color:var(--text3)">${data.fullText.length} caractères</span>
+        </div>
+        <div class="text-result" id="textcontent-${op}">${escapeHtml(data.fullText)}</div>
+      </div>
+    </div>`;
+  el.classList.add('visible');
+  toast('Texte extrait avec succès !', 'success');
+}
+
+function copyText(op){
+  const el = document.getElementById('textcontent-'+op);
+  if(!el) return;
+  navigator.clipboard.writeText(el.textContent)
+    .then(()=>toast('Texte copié dans le presse-papiers !','success'))
+    .catch(()=>toast('Impossible de copier.','error'));
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function toast(msg, type='info'){
+  const icons = {
+    success:'<polyline points="20 6 9 17 4 12"/>',
+    error:  '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+    info:   '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
+  };
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `
+    <div class="toast-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${icons[type]||icons.info}</svg></div>
+    <span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(()=>{
+    t.style.animation='toastOut .3s forwards';
+    setTimeout(()=>t.remove(), 300);
+  }, 3500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SERVER HEALTH CHECK
+// ═══════════════════════════════════════════════════════════
+async function checkServer(){
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  try {
+    const res = await fetch(`${API}/ping`, {signal: AbortSignal.timeout(4000)});
+    if(res.ok){
+      dot.className  = 'status-dot online';
+      text.textContent = 'Serveur en ligne';
+    } else throw new Error();
+  } catch {
+    dot.className  = 'status-dot offline';
+    text.textContent = 'Serveur hors ligne';
+  }
+}
+checkServer();
+setInterval(checkServer, 30000);
+</script>
+</body>
+</html>

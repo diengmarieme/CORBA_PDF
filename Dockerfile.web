@@ -1,0 +1,11 @@
+FROM eclipse-temurin:11-jre-alpine
+WORKDIR /app
+
+# On copie le JAR que tu viens de générer sur ton PC
+COPY web-middleware/target/web-middleware-0.0.1-SNAPSHOT.jar app.jar
+
+# On expose le port
+EXPOSE 8080
+
+# On lance directement
+ENTRYPOINT ["java", "-jar", "app.jar"]
