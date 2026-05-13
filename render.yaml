@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: pdf-naming
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.naming
+    dockerContext: .
+    envVars:
+      - key: NAMING_PORT
+        value: 2809
+
+  - type: web
+    name: pdf-server
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.server
+    dockerContext: .
+    envVars:
+      - key: NAMING_HOST
+        value: pdf-naming
+      - key: NAMING_PORT
+        value: 2809
+      - key: SERVER_PORT
+        value: 2810
+
+  - type: web
+    name: pdf-web
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.web
+    dockerContext: .
+    envVars:
+      - key: NAMING_HOST
+        value: pdf-naming
+      - key: NAMING_PORT
+        value: 2809
+      - key: WEB_PORT
+        value: 8080
+
+  - type: web
+    name: pdf-frontend
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.frontend
+    dockerContext: .
+    plan: free
