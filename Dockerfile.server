@@ -9,4 +9,4 @@ COPY corba-server/target/corba-server.jar app.jar
 
 # On lance d'abord le service de noms CORBA par défaut (orbd ou tnameserv) en arrière-plan, 
 # on attend 3 secondes qu'il soit prêt, puis on démarre votre JAR.
-CMD orbd -ORBInitialPort 2809 & sleep 3 && java -jar app.jar
+CMD tnameserv -ORBInitialPort 2809 & sleep 4 && java -jar app.jar
