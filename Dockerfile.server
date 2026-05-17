@@ -1,7 +1,12 @@
 FROM eclipse-temurin:8-jre-alpine
 WORKDIR /app
 
-# On copie le JAR du serveur (vérifie bien le nom dans ton dossier target)
+# On installe bash si nécessaire pour exécuter les commandes à la suite
+RUN apk add --no-cache bash
+
+# On copie le JAR du serveur
 COPY corba-server/target/corba-server.jar app.jar
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# On lance d'abord le service de noms CORBA par défaut (orbd ou tnameserv) en arrière-plan, 
+# on attend 3 secondes qu'il soit prêt, puis on démarre votre JAR.
+CMD orbd -ORBInitialPort 2809 & sleep 3 && java -jar app.jar
