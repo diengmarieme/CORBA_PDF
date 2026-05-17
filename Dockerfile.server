@@ -1,12 +1,14 @@
 FROM eclipse-temurin:8-jre-alpine
 WORKDIR /app
 
-# On installe bash si nécessaire pour exécuter les commandes à la suite
 RUN apk add --no-cache bash
 
-# On copie le JAR du serveur
 COPY corba-server/target/corba-server.jar app.jar
 
-# On lance d'abord le service de noms CORBA par défaut (orbd ou tnameserv) en arrière-plan, 
-# on attend 3 secondes qu'il soit prêt, puis on démarre votre JAR.
-CMD tnameserv -ORBInitialPort 2809 & sleep 4 && java -jar app.jar
+# On injecte le port directement via les propriétés système Java (-Dcom.sun.CORBA...)
+RUN echo -e '#!/bin/bash\n\
+tnameserv -ORBInitialPort 2809 &\n\
+sleep 5\n\
+java -Dcom.sun.CORBA.ORBInitialPort=2809 -Dcom.sun.CORBA.ORBInitialHost=localhost -jar app.jar' > start.sh && chmod +x start.sh
+
+CMD ["./start.sh"]
