@@ -5,15 +5,13 @@ RUN apk add --no-cache bash
 
 COPY corba-server/target/corba-server.jar app.jar
 
-# On définit proprement les variables d'environnement pour l'ORB
 ENV ORB_PORT=2809
 ENV ORB_HOST=127.0.0.1
 
-# On lance tnameserv en le liant explicitement à localhost pour le protéger de Render,
-# puis on injecte l'intégralité des arguments d'initialisation standard à la JVM
+# On a retiré "-ORBInitialHost 127.0.0.1" de la commande tnameserv
 RUN echo -e '#!/bin/bash\n\
-tnameserv -ORBInitialPort 2809 -ORBInitialHost 127.0.0.1 &\n\
-sleep 4\n\
+tnameserv -ORBInitialPort 2809 &\n\
+sleep 5\n\
 java -Dorg.omg.CORBA.ORBInitialPort=2809 -Dorg.omg.CORBA.ORBInitialHost=127.0.0.1 -Dcom.sun.CORBA.ORBInitialPort=2809 -Dcom.sun.CORBA.ORBInitialHost=127.0.0.1 -jar app.jar' > start.sh && chmod +x start.sh
 
 CMD ["./start.sh"]
