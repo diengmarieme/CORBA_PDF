@@ -1,42 +1,12 @@
 services:
   - type: web
-    name: pdf-naming
+    name: pdf-corba-middleware
     runtime: docker
-    dockerfilePath: ./docker/Dockerfile.naming
-    dockerContext: .
-    envVars:
-      - key: NAMING_PORT
-        value: 2809
-
-  - type: web
-    name: pdf-server
-    runtime: docker
-    dockerfilePath: ./docker/Dockerfile.server
-    dockerContext: .
-    envVars:
-      - key: NAMING_HOST
-        value: pdf-naming
-      - key: NAMING_PORT
-        value: 2809
-      - key: SERVER_PORT
-        value: 2810
-
-  - type: web
-    name: pdf-web
-    runtime: docker
-    dockerfilePath: ./docker/Dockerfile.web
-    dockerContext: .
-    envVars:
-      - key: NAMING_HOST
-        value: pdf-naming
-      - key: NAMING_PORT
-        value: 2809
-      - key: WEB_PORT
-        value: 8080
-
-  - type: web
-    name: pdf-frontend
-    runtime: docker
-    dockerfilePath: ./docker/Dockerfile.frontend
-    dockerContext: .
+    repo: https://github.com/diengmarieme/CORBA_PDF # Ton dépôt
     plan: free
+    branch: main
+    rootDir: .
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: PORT
+        value: 8080
