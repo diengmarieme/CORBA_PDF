@@ -9,13 +9,13 @@ FROM eclipse-temurin:8-jre-alpine
 WORKDIR /app
 RUN apk add --no-cache bash
 
-# Copie des fichiers JAR compilés (Chemins corrigés selon la structure de build réelle)
+# Copie des fichiers JAR compilés (Tous deux centralisés dans /build/target/)
 COPY --from=builder /build/target/corba-server.jar /app/corba-server.jar
-COPY --from=builder /build/web-middleware/target/web-middleware.jar /app/web-middleware.jar
+COPY --from=builder /build/target/web-middleware.jar /app/web-middleware.jar
 
 EXPOSE 8080
 
-# Démarrage coordonné
+# Démarrage coordonné de tout l'écosystème
 CMD tnameserv -ORBInitialPort 2809 & \
     sleep 3 && \
     java -Dorg.omg.CORBA.ORBInitialPort=2809 -Dorg.omg.CORBA.ORBInitialHost=127.0.0.1 -jar /app/corba-server.jar & \
