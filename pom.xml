@@ -5,122 +5,45 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.pdfservice</groupId>
-    <artifactId>corba-server</artifactId>
+    <artifactId>pdf-corba-project</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>corba-server</module>
+        <module>web-middleware</module>
+    </modules>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <glassfish.corba.version>4.2.4</glassfish.corba.version>
+        <jacorb.version>3.9</jacorb.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-    <groupId>org.glassfish.corba</groupId>
-    <artifactId>glassfish-corba-omgapi</artifactId>
-    <version>4.2.4</version>
-</dependency>
-<dependency>
-    <groupId>org.glassfish.corba</groupId>
-    <artifactId>glassfish-corba-orb</artifactId>
-    <version>4.2.4</version>
-</dependency>
-<dependency>
-    <groupId>org.glassfish.corba</groupId>
-    <artifactId>glassfish-corba-internal-api</artifactId>
-    <version>4.2.4</version>
-</dependency>
-        <dependency>
-            <groupId>org.glassfish.corba</groupId>
-            <artifactId>glassfish-corba-omgapi</artifactId>
-            <version>4.2.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.corba</groupId>
-            <artifactId>glassfish-corba-orb</artifactId>
-            <version>4.2.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.corba</groupId>
-            <artifactId>glassfish-corba-internal-api</artifactId>
-            <version>4.2.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jacorb</groupId>
-            <artifactId>jacorb</artifactId>
-            <version>3.9</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>2.0.27</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.36</version>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <finalName>corba-server</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>idlj-maven-plugin</artifactId>
-                <version>1.2.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <sources>
-                        <source>
-                            <includes>
-                                <include>**/pdfservice.idl</include>
-                            </includes>
-                        </source>
-                    </sources>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.pdfservice.server.ServerMain</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.glassfish.corba</groupId>
+                <artifactId>glassfish-corba-omgapi</artifactId>
+                <version>${glassfish.corba.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.corba</groupId>
+                <artifactId>glassfish-corba-orb</artifactId>
+                <version>${glassfish.corba.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.corba</groupId>
+                <artifactId>glassfish-corba-internal-api</artifactId>
+                <version>${glassfish.corba.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jacorb</groupId>
+                <artifactId>jacorb</artifactId>
+                <version>${jacorb.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

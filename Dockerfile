@@ -1,4 +1,4 @@
-# --- Étape 1 : Compilation globale avec OpenJDK 8 traditionnel ---
+# --- Étape 1 : Compilation globale avec OpenJDK 8 ---
 FROM maven:3.8.6-openjdk-8 AS builder
 WORKDIR /build
 COPY . .
@@ -9,13 +9,13 @@ FROM eclipse-temurin:8-jre-alpine
 WORKDIR /app
 RUN apk add --no-cache bash
 
-# Copie des fichiers JAR compilés (Tous deux centralisés dans /build/target/)
-COPY --from=builder /build/target/corba-server.jar /app/corba-server.jar
-COPY --from=builder /build/target/web-middleware.jar /app/web-middleware.jar
+# Chemins réels par défaut respectés après un build multi-module réussi
+COPY --from=builder /build/corba-server/target/corba-server.jar /app/corba-server.jar
+COPY --from=builder /build/web-middleware/target/web-middleware.jar /app/web-middleware.jar
 
 EXPOSE 8080
 
-# Démarrage coordonné de tout l'écosystème
+# Démarrage coordonné de l'écosystème CORBA + Spring
 CMD tnameserv -ORBInitialPort 2809 & \
     sleep 3 && \
     java -Dorg.omg.CORBA.ORBInitialPort=2809 -Dorg.omg.CORBA.ORBInitialHost=127.0.0.1 -jar /app/corba-server.jar & \
