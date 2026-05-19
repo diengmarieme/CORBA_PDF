@@ -767,4 +767,50 @@ public class PDFServiceImpl extends IPDFServicePOA {
     private String nvl(String s) {
         return s != null ? s : "";
     }
+
+    @Override
+    public byte[] imagesToPdf(byte[][] images, String[] mimeTypes)
+            throws PDFProcessingException, InvalidParameterException {
+        if (images == null || images.length == 0)
+            throw new InvalidParameterException("images", "Au moins une image requise");
+        try (PDDocument doc = new PDDocument()) {
+            for (int i = 0; i < images.length; i++) {
+                PDImageXObject img = PDImageXObject.createFromByteArray(doc, images[i], "img"+i);
+                PDRectangle pageSize = new PDRectangle(img.getWidth(), img.getHeight());
+                PDPage page = new PDPage(pageSize);
+                doc.addPage(page);
+                try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
+                    cs.drawImage(img, 0, 0, img.getWidth(), img.getHeight());
+                }
+            }
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            doc.save(baos);
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new PDFProcessingException("Erreur conversion image→PDF: " + e.getMessage(), "IMG_PDF_ERROR");
+        }
+    }
+
+    @Override
+    public byte[] imagesToPdf(byte[][] images, String[] mimeTypes)
+            throws PDFProcessingException, InvalidParameterException {
+        if (images == null || images.length == 0)
+            throw new InvalidParameterException("images", "Au moins une image requise");
+        try (org.apache.pdfbox.pdmodel.PDDocument doc = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            for (int i = 0; i < images.length; i++) {
+                PDImageXObject img = PDImageXObject.createFromByteArray(doc, images[i], "img"+i);
+                PDRectangle pageSize = new PDRectangle(img.getWidth(), img.getHeight());
+                PDPage page = new PDPage(pageSize);
+                doc.addPage(page);
+                try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
+                    cs.drawImage(img, 0, 0, img.getWidth(), img.getHeight());
+                }
+            }
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            doc.save(baos);
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new PDFProcessingException("Erreur conversion image vers PDF: " + e.getMessage(), "IMG_PDF_ERROR");
+        }
+    }
 }

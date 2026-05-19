@@ -729,6 +729,22 @@ input[type=color]{
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Extraire images <span class="nav-badge">+</span>
   </div>
+  <div style="padding:8px 12px 4px;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px">Convertir</div>
+  <div class="nav-item" data-panel="toword" onclick="showPanel('toword',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    PDF → Word
+    <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(232,82,26,0.2);color:var(--accent);margin-left:auto">new</span>
+  </div>
+  <div class="nav-item" data-panel="toppt" onclick="showPanel('toppt',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    PDF → PPT
+    <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(232,82,26,0.2);color:var(--accent);margin-left:auto">new</span>
+  </div>
+  <div class="nav-item" data-panel="imagetopdf" onclick="showPanel('imagetopdf',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+    Image → PDF
+    <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(232,82,26,0.2);color:var(--accent);margin-left:auto">new</span>
+  </div>
 
   <div class="sidebar-bottom">
     <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Changer le thème"></div>
@@ -743,7 +759,17 @@ input[type=color]{
       <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </div>
     <div class="topbar-title" id="topbarTitle">Toutes les fonctions</div>
-    <div class="server-status">
+    <div id="nav-auth" style="display:flex;align-items:center;gap:8px;margin-right:12px">
+  <button onclick="showLoginModal()" style="padding:5px 14px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;color:var(--text2);background:transparent;cursor:pointer">Se connecter</button>
+  <button onclick="showLoginModal()" style="padding:5px 14px;font-size:12px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer">S'inscrire</button>
+</div>
+<div id="nav-user" style="display:none;align-items:center;gap:8px;margin-right:12px">
+  <div id="user-chip" onclick="showUserMenu()" style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg2);border-radius:20px;cursor:pointer;border:0.5px solid var(--border)">
+    <div id="user-avatar" style="width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#fff">?</div>
+    <span id="user-name" style="font-size:12px;color:var(--text1)"></span>
+  </div>
+</div>
+<div class="server-status">
       <div class="status-dot" id="statusDot"></div>
       <span id="statusText">Vérification...</span>
     </div>
@@ -1632,6 +1658,210 @@ async function checkServer(){
 }
 checkServer();
 setInterval(checkServer, 30000);
+</script>
+
+<div id="login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--bg1);border-radius:12px;padding:24px;width:320px;border:0.5px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:16px;font-weight:500;color:var(--text1)">PDF Studio</div>
+      <span onclick="hideLoginModal()" style="cursor:pointer;color:var(--text2);font-size:20px">&times;</span>
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:16px">
+      <button id="tab-login" onclick="switchAuthTab('login')" style="flex:1;padding:7px;font-size:12px;border-radius:6px;cursor:pointer;background:var(--accent);border:none;color:#fff">Se connecter</button>
+      <button id="tab-register" onclick="switchAuthTab('register')" style="flex:1;padding:7px;font-size:12px;border-radius:6px;cursor:pointer;background:transparent;border:0.5px solid var(--border);color:var(--text2)">S'inscrire</button>
+    </div>
+    <div id="login-form">
+      <input id="login-user" type="text" placeholder="Nom d'utilisateur" style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);margin-bottom:10px"/>
+      <input id="login-pass" type="password" placeholder="Mot de passe" style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);margin-bottom:14px"/>
+      <button onclick="doLogin()" style="width:100%;padding:9px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:13px;font-weight:500;cursor:pointer">Se connecter</button>
+      <div id="login-error" style="color:#f87171;font-size:11px;margin-top:8px;text-align:center"></div>
+    </div>
+    <div id="register-form" style="display:none">
+      <input id="reg-user" type="text" placeholder="Nom d'utilisateur" style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);margin-bottom:10px"/>
+      <input id="reg-email" type="email" placeholder="Email" style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);margin-bottom:10px"/>
+      <input id="reg-pass" type="password" placeholder="Mot de passe (min 6 caractères)" style="width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);margin-bottom:14px"/>
+      <button onclick="doRegister()" style="width:100%;padding:9px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:13px;font-weight:500;cursor:pointer">Créer mon compte</button>
+      <div id="register-error" style="color:#f87171;font-size:11px;margin-top:8px;text-align:center"></div>
+    </div>
+  </div>
+</div>
+
+<div id="admin-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9998;align-items:flex-start;justify-content:center;padding-top:40px">
+  <div style="background:var(--bg1);border-radius:12px;padding:24px;width:700px;max-height:80vh;overflow-y:auto;border:0.5px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:500;color:var(--text1)">Dashboard Admin</div>
+      <span onclick="document.getElementById('admin-panel').style.display='none'" style="cursor:pointer;color:var(--text2);font-size:20px">&times;</span>
+    </div>
+    <div id="admin-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+    <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Utilisateurs</div>
+    <div id="admin-users"></div>
+  </div>
+</div>
+
+<div id="profile-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9998;align-items:center;justify-content:center">
+  <div style="background:var(--bg1);border-radius:12px;padding:24px;width:400px;border:0.5px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:500;color:var(--text1)">Mon profil</div>
+      <span onclick="document.getElementById('profile-panel').style.display='none'" style="cursor:pointer;color:var(--text2);font-size:20px">&times;</span>
+    </div>
+    <div id="profile-content"></div>
+  </div>
+</div>
+
+<script>
+const API_AUTH = '/api/auth';
+const API_ADMIN = '/api/admin';
+const API_USER = '/api/user';
+let currentUser = null;
+let authToken = localStorage.getItem('pdfToken');
+
+window.addEventListener('load', function() {
+  if (authToken) { fetchProfile(); }
+});
+
+function showLoginModal() {
+  document.getElementById('login-modal').style.display = 'flex';
+}
+function hideLoginModal() {
+  document.getElementById('login-modal').style.display = 'none';
+}
+function switchAuthTab(tab) {
+  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('tab-login').style.background = tab === 'login' ? 'var(--accent)' : 'transparent';
+  document.getElementById('tab-login').style.color = tab === 'login' ? '#fff' : 'var(--text2)';
+  document.getElementById('tab-register').style.background = tab === 'register' ? 'var(--accent)' : 'transparent';
+  document.getElementById('tab-register').style.color = tab === 'register' ? '#fff' : 'var(--text2)';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value;
+  const password = document.getElementById('login-pass').value;
+  try {
+    const r = await fetch(API_AUTH + '/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await r.json();
+    if (data.token) { setLoggedIn(data); hideLoginModal(); }
+    else { document.getElementById('login-error').textContent = data.error || 'Erreur'; }
+  } catch(e) { document.getElementById('login-error').textContent = 'Erreur connexion'; }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-user').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-pass').value;
+  try {
+    const r = await fetch(API_AUTH + '/register', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username, email, password})
+    });
+    const data = await r.json();
+    if (data.token) { setLoggedIn(data); hideLoginModal(); }
+    else { document.getElementById('register-error').textContent = data.error || 'Erreur'; }
+  } catch(e) { document.getElementById('register-error').textContent = 'Erreur'; }
+}
+
+function setLoggedIn(data) {
+  currentUser = data;
+  authToken = data.token;
+  localStorage.setItem('pdfToken', authToken);
+  const navAuth = document.getElementById('nav-auth');
+  const navUser = document.getElementById('nav-user');
+  navAuth.style.display = 'none';
+  navUser.style.display = 'flex';
+  document.getElementById('user-avatar').textContent = data.username[0].toUpperCase();
+  document.getElementById('user-name').textContent = data.username;
+  if (data.role === 'ADMIN') {
+    document.getElementById('admin-section').style.display = 'block';
+  }
+  document.getElementById('profile-section').style.display = 'block';
+}
+
+async function fetchProfile() {
+  try {
+    const r = await fetch(API_USER + '/profile', {headers:{'Authorization':'Bearer '+authToken}});
+    if (r.ok) { const data = await r.json(); setLoggedIn({...data, token: authToken}); }
+    else { localStorage.removeItem('pdfToken'); authToken = null; }
+  } catch(e) {}
+}
+
+function logout() {
+  currentUser = null; authToken = null;
+  localStorage.removeItem('pdfToken');
+  document.getElementById('nav-auth').style.display = 'flex';
+  document.getElementById('nav-user').style.display = 'none';
+  document.getElementById('admin-section').style.display = 'none';
+  document.getElementById('profile-section').style.display = 'none';
+}
+
+async function showAdminDashboard() {
+  document.getElementById('admin-panel').style.display = 'flex';
+  const headers = {'Authorization':'Bearer '+authToken};
+  const [statsR, usersR] = await Promise.all([
+    fetch(API_ADMIN+'/stats',{headers}),
+    fetch(API_ADMIN+'/users',{headers})
+  ]);
+  const stats = await statsR.json();
+  const users = await usersR.json();
+  document.getElementById('admin-stats').innerHTML = [
+    ['Utilisateurs', stats.totalUsers],
+    ['Admins', stats.totalAdmins],
+    ['Opérations', stats.totalOperations],
+    ['Plans PRO', stats.proUsers]
+  ].map(([l,v]) => `<div style="background:var(--bg2);border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:500;color:var(--text1)">${v}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${l}</div></div>`).join('');
+  document.getElementById('admin-users').innerHTML = `
+    <div style="background:var(--bg2);border-radius:8px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1fr 80px 90px 80px;padding:8px 12px;font-size:11px;color:var(--text2);border-bottom:0.5px solid var(--border)">
+        <span>Utilisateur</span><span>Rôle</span><span>Plan</span><span>Actions</span>
+      </div>
+      ${users.map(u => `
+      <div style="display:grid;grid-template-columns:1fr 80px 90px 80px;padding:8px 12px;font-size:12px;color:var(--text1);border-bottom:0.5px solid var(--border);align-items:center">
+        <span style="font-weight:500">${u.username}</span>
+        <span style="font-size:10px;padding:2px 6px;border-radius:8px;display:inline-block;background:${u.role==='ADMIN'?'rgba(239,68,68,0.15)':'rgba(59,130,246,0.15)'};color:${u.role==='ADMIN'?'#f87171':'#60a5fa'}">${u.role}</span>
+        <span style="font-size:10px;padding:2px 6px;border-radius:8px;display:inline-block;background:rgba(245,158,11,0.15);color:#fbbf24">${u.plan}</span>
+        <button onclick="toggleUser(${u.id})" style="font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;background:var(--bg1);border:0.5px solid var(--border);color:var(--text2)">${u.active?'Désactiver':'Activer'}</button>
+      </div>`).join('')}
+    </div>`;
+}
+
+async function toggleUser(id) {
+  await fetch(API_ADMIN+'/users/'+id+'/toggle', {method:'POST', headers:{'Authorization':'Bearer '+authToken}});
+  showAdminDashboard();
+}
+
+async function showProfile() {
+  document.getElementById('profile-panel').style.display = 'flex';
+  const r = await fetch(API_USER+'/profile', {headers:{'Authorization':'Bearer '+authToken}});
+  const u = await r.json();
+  document.getElementById('profile-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:500;color:#fff">${u.username[0].toUpperCase()}</div>
+      <div><div style="font-size:14px;font-weight:500;color:var(--text1)">${u.username}</div><div style="font-size:12px;color:var(--text2)">${u.email}</div></div>
+      <span style="margin-left:auto;font-size:11px;padding:3px 8px;border-radius:8px;background:rgba(232,82,26,0.15);color:var(--accent)">${u.plan}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--bg2);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text2)">Taille max</div><div style="font-size:14px;font-weight:500;color:var(--text1);margin-top:4px">${Math.round(u.maxFileSize/1048576)} Mo</div></div>
+      <div style="background:var(--bg2);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text2)">Opérations</div><div style="font-size:14px;font-weight:500;color:var(--text1);margin-top:4px">${u.totalOperations}</div></div>
+    </div>
+    ${u.role !== 'ADMIN' ? `
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Changer de plan</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="upgradePlan('FREE')" style="flex:1;padding:7px;font-size:11px;border-radius:6px;cursor:pointer;background:var(--bg2);border:0.5px solid var(--border);color:var(--text2)">FREE<br><small>5 Mo</small></button>
+      <button onclick="upgradePlan('PRO')" style="flex:1;padding:7px;font-size:11px;border-radius:6px;cursor:pointer;background:${u.plan==='PRO'?'var(--accent)':'var(--bg2)'};border:0.5px solid ${u.plan==='PRO'?'var(--accent)':'var(--border)'};color:${u.plan==='PRO'?'#fff':'var(--text2)'}">PRO<br><small>50 Mo</small></button>
+      <button onclick="upgradePlan('ENTERPRISE')" style="flex:1;padding:7px;font-size:11px;border-radius:6px;cursor:pointer;background:var(--bg2);border:0.5px solid var(--border);color:var(--text2)">ENTERPRISE<br><small>200 Mo</small></button>
+    </div>` : ''}
+  `;
+}
+
+async function upgradePlan(plan) {
+  const r = await fetch(API_USER+'/upgrade', {
+    method:'POST', headers:{'Authorization':'Bearer '+authToken,'Content-Type':'application/json'},
+    body: JSON.stringify({plan})
+  });
+  if (r.ok) { showProfile(); }
+}
 </script>
 </body>
 </html>

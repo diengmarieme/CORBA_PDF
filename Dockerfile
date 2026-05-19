@@ -1,8 +1,9 @@
-# --- Étape 1 : Compilation globale avec OpenJDK 8 traditionnel (Contient idlj fonctionnel) ---
+# --- Étape 1 : Compilation globale avec OpenJDK 8 traditionnel ---
 FROM maven:3.8.6-openjdk-8 AS builder
 WORKDIR /build
 COPY . .
-RUN mvn clean package -DskipTests -q
+# Retrait du paramètre -q pour avoir la traçabilité complète des logs
+RUN mvn clean package -DskipTests
 
 # --- Étape 2 : Image d'exécution légère ---
 FROM eclipse-temurin:8-jre-alpine
@@ -15,7 +16,7 @@ COPY --from=builder /build/web-middleware/target/web-middleware.jar /app/web-mid
 
 EXPOSE 8080
 
-# Démarrage coordonné de l'écosystème CORBA et Spring Boot
+# Démarrage coordonné
 CMD tnameserv -ORBInitialPort 2809 & \
     sleep 3 && \
     java -Dorg.omg.CORBA.ORBInitialPort=2809 -Dorg.omg.CORBA.ORBInitialHost=127.0.0.1 -jar /app/corba-server.jar & \

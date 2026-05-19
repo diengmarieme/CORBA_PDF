@@ -499,4 +499,26 @@ public class PdfController {
     private String sanitizeFilename(String name) {
         return name.replaceAll("[^a-zA-Z0-9_\\-]", "_").toLowerCase();
     }
+
+    @PostMapping("/imagetopdf")
+    public ResponseEntity<?> imagesToPdf(@RequestParam("files") MultipartFile[] files) {
+        log.info("[REST] imagesToPdf() -> " + files.length + " fichiers");
+        try {
+            byte[][] images = new byte[files.length][];
+            String[] mimes = new String[files.length];
+            for (int i = 0; i < files.length; i++) {
+                images[i] = files[i].getBytes();
+                mimes[i] = files[i].getContentType() != null ? files[i].getContentType() : "image/jpeg";
+            }
+            byte[] result = corbaClient.getService().imagesToPdf(images, mimes);
+            return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=images.pdf")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(result);
+        } catch (Exception e) {
+            log.warning("[REST] Erreur : " + e.getMessage());
+            return ResponseEntity.status(500).body(java.util.Map.of("error", "Erreur: " + e.getMessage()));
+        }
+    }
+
 }
