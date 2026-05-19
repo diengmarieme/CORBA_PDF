@@ -1,10 +1,10 @@
-# --- Étape 1 : Compilation globale ---
-FROM maven:3.9-eclipse-temurin-8-alpine AS builder
+# --- Étape 1 : Compilation globale (Changement d'image pour éviter le bug TLS Handshake) ---
+FROM maven:3.9-eclipse-temurin-8 AS builder
 WORKDIR /build
 COPY . .
 RUN mvn clean package -DskipTests -q
 
-# --- Étape 2 : Image d'exécution ---
+# --- Étape 2 : Image d'exécution (On garde celle-ci qui est légère et fonctionne très bien) ---
 FROM eclipse-temurin:8-jre-alpine
 WORKDIR /app
 RUN apk add --no-cache bash
