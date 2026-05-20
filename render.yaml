@@ -1,10 +1,10 @@
 services:
-  # 1. LE BACKEND CORBA & NAMING SERVICE (JacORB)
+  # 1. LE BACKEND CORBA & NAMING SERVICE (Déjà fonctionnel !)
   - type: web
     name: pdf-corba-backend
     runtime: docker
-    rootDir: . # Reste à la racine globale pour trouver le Dockerfile
-    dockerfilePath: Dockerfile.server # Trouve le Dockerfile.server vu dans ton ls
+    rootDir: .
+    dockerfilePath: Dockerfile.server
     plan: free
     envVars:
       - key: PORT
@@ -14,9 +14,10 @@ services:
   - type: web
     name: pdf-corba-middleware
     runtime: docker
-    rootDir: . # Reste à la racine globale pour trouver le Dockerfile
-    dockerfilePath: Dockerfile.web # Trouve le Dockerfile.web vu dans ton ls
+    rootDir: .
+    dockerfilePath: Dockerfile.web
     plan: free
+    healthCheckPath: /actuator/health # Si tu as Spring Boot Actuator, sinon mets un chemin qui existe ou laisse vide
     envVars:
       - key: PORT
         value: 8080
@@ -25,12 +26,12 @@ services:
       - key: CORBA_NAMING_PORT
         value: "2809"
 
-  # 3. LE FRONTEND (Interface utilisateur Nginx / HTML5)
+  # 3. LE FRONTEND
   - type: web
     name: pdf-corba-frontend
     runtime: docker
-    rootDir: . # Reste à la racine globale pour trouver le Dockerfile
-    dockerfilePath: Dockerfile # Trouve le Dockerfile générique de ton ls
+    rootDir: .
+    dockerfilePath: Dockerfile
     plan: free
     envVars:
       - key: PORT
