@@ -3,19 +3,19 @@ services:
   - type: web
     name: pdf-corba-backend
     runtime: docker
-    rootDir: corba-server
-    dockerfilePath: Dockerfile.server
+    rootDir: . # Reste à la racine globale pour trouver le Dockerfile
+    dockerfilePath: Dockerfile.server # Trouve le Dockerfile.server vu dans ton ls
     plan: free
     envVars:
       - key: PORT
-        value: 2809 # Force Render à écouter sur le port natif de CORBA
+        value: 2809
 
   # 2. LE MIDDLEWARE SPRING BOOT (API REST)
   - type: web
     name: pdf-corba-middleware
     runtime: docker
-    rootDir: web-middleware
-    dockerfilePath: Dockerfile.web
+    rootDir: . # Reste à la racine globale pour trouver le Dockerfile
+    dockerfilePath: Dockerfile.web # Trouve le Dockerfile.web vu dans ton ls
     plan: free
     envVars:
       - key: PORT
@@ -29,9 +29,9 @@ services:
   - type: web
     name: pdf-corba-frontend
     runtime: docker
-    rootDir: frontend
-    dockerfilePath: Dockerfile
+    rootDir: . # Reste à la racine globale pour trouver le Dockerfile
+    dockerfilePath: Dockerfile # Trouve le Dockerfile générique de ton ls
     plan: free
     envVars:
       - key: PORT
-        value: 80 # Port par défaut pour Nginx
+        value: 80
