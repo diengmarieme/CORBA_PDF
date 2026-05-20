@@ -1,21 +1,19 @@
 services:
   # 1. LE BACKEND CORBA & NAMING SERVICE (JacORB)
-  # Configuré en type 'web' pour passer le validateur Free de Render
   - type: web
     name: pdf-corba-backend
     runtime: docker
-    repo: https://github.com/diengmarieme/CORBA_PDF
-    branch: main
     rootDir: corba-server
     dockerfilePath: Dockerfile.server
     plan: free
+    envVars:
+      - key: PORT
+        value: 2809 # Force Render à écouter sur le port natif de CORBA
 
   # 2. LE MIDDLEWARE SPRING BOOT (API REST)
   - type: web
     name: pdf-corba-middleware
     runtime: docker
-    repo: https://github.com/diengmarieme/CORBA_PDF
-    branch: main
     rootDir: web-middleware
     dockerfilePath: Dockerfile.web
     plan: free
@@ -31,8 +29,9 @@ services:
   - type: web
     name: pdf-corba-frontend
     runtime: docker
-    repo: https://github.com/diengmarieme/CORBA_PDF
-    branch: main
     rootDir: frontend
     dockerfilePath: Dockerfile
     plan: free
+    envVars:
+      - key: PORT
+        value: 80 # Port par défaut pour Nginx
