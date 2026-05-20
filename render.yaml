@@ -1,7 +1,7 @@
 services:
   # 1. LE BACKEND CORBA & NAMING SERVICE (JacORB)
-  # 'pserv' est la clé officielle exigée par la documentation de Render
-  - type: pserv
+  # 'private' est le mot-clé standard et universel de Render pour un Private Service
+  - type: private
     name: pdf-corba-backend
     runtime: docker
     repo: https://github.com/diengmarieme/CORBA_PDF
@@ -9,9 +9,6 @@ services:
     rootDir: corba-server
     dockerfilePath: Dockerfile.server
     plan: free
-    ports:
-      - port: 2809
-        protocol: tcp
 
   # 2. LE MIDDLEWARE SPRING BOOT (API REST)
   - type: web
