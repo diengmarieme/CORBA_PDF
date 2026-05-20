@@ -1,7 +1,7 @@
 services:
   # 1. LE BACKEND CORBA & NAMING SERVICE (JacORB)
-  # 'private' est le mot-clé standard et universel de Render pour un Private Service
-  - type: private
+  # Configuré en type 'web' pour passer le validateur Free de Render
+  - type: web
     name: pdf-corba-backend
     runtime: docker
     repo: https://github.com/diengmarieme/CORBA_PDF
