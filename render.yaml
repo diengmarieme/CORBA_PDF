@@ -1,7 +1,7 @@
 services:
   # 1. LE BACKEND CORBA & NAMING SERVICE (JacORB)
-  # Ce service tourne en tâche de fond (private-service) et expose le port 2809.
-  - type: private-service
+  # 'pss' est le mot-clé exact pour un Private Service dans un Blueprint Render
+  - type: pss
     name: pdf-corba-backend
     runtime: docker
     repo: https://github.com/diengmarieme/CORBA_PDF
@@ -14,7 +14,6 @@ services:
         protocol: tcp
 
   # 2. LE MIDDLEWARE SPRING BOOT (API REST)
-  # Il reçoit les requêtes HTTP du Front et communique avec le Backend via CORBA.
   - type: web
     name: pdf-corba-middleware
     runtime: docker
@@ -26,14 +25,12 @@ services:
     envVars:
       - key: PORT
         value: 8080
-      # Injection automatique dans les propriétés @Value("${corba.naming.host}") et port de ton CORBAClient
       - key: CORBA_NAMING_HOST
         value: pdf-corba-backend
       - key: CORBA_NAMING_PORT
         value: "2809"
 
   # 3. LE FRONTEND (Interface utilisateur Nginx / HTML5)
-  # C'est l'interface web accessible par l'utilisateur final.
   - type: web
     name: pdf-corba-frontend
     runtime: docker
