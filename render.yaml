@@ -1,7 +1,7 @@
 services:
   # 1. LE BACKEND CORBA & NAMING SERVICE (JacORB)
-  # 'pss' est le mot-clé exact pour un Private Service dans un Blueprint Render
-  - type: pss
+  # 'pserv' est la clé officielle exigée par la documentation de Render
+  - type: pserv
     name: pdf-corba-backend
     runtime: docker
     repo: https://github.com/diengmarieme/CORBA_PDF
