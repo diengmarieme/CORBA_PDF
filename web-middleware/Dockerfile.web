@@ -1,0 +1,18 @@
+# Étape 1 : Compilation
+FROM maven:3.8.5-openjdk-11 AS build
+WORKDIR /app
+
+COPY . .
+
+# On compile proprement le module
+RUN mvn clean package -pl web-middleware -DskipTests
+
+# Étape 2 : Image finale d'exécution
+FROM eclipse-temurin:11-jre-alpine
+WORKDIR /app
+
+COPY --from=build /app/web-middleware/target/web-middleware-*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
