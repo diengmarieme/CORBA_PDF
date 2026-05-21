@@ -49,6 +49,7 @@ PDFService/_IPDFServiceStub.class
 PDFService/SplitResultHelper.class
 PDFService/ImageConversionResultHelper.class
 PDFService/IPDFServicePOA.class
+com/pdfservice/web/config/DataInitializer.class
 PDFService/PDFPasswordExceptionHolder.class
 PDFService/WatermarkParams.class
 com/pdfservice/web/WebApplication.class
