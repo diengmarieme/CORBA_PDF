@@ -1,5 +1,5 @@
 services:
-  # 1. LE BACKEND CORBA & NAMING SERVICE (Déjà fonctionnel !)
+  # 1. LE BACKEND CORBA & NAMING SERVICE (Déjà fonctionnel)
   - type: web
     name: pdf-corba-backend
     runtime: docker
@@ -10,14 +10,14 @@ services:
       - key: PORT
         value: 2809
 
-  # 2. LE MIDDLEWARE SPRING BOOT (API REST)
+  # 2. LE MIDDLEWARE SPRING BOOT
   - type: web
     name: pdf-corba-middleware
     runtime: docker
     rootDir: .
     dockerfilePath: Dockerfile.web
     plan: free
-    healthCheckPath: /actuator/health # Si tu as Spring Boot Actuator, sinon mets un chemin qui existe ou laisse vide
+    healthCheckPath: "" # Désactive le Health Check HTTP bloquant pour Spring Boot
     envVars:
       - key: PORT
         value: 8080
@@ -26,13 +26,14 @@ services:
       - key: CORBA_NAMING_PORT
         value: "2809"
 
-  # 3. LE FRONTEND
+  # 3. LE FRONTEND NGINX
   - type: web
     name: pdf-corba-frontend
     runtime: docker
     rootDir: .
     dockerfilePath: Dockerfile
     plan: free
+    healthCheckPath: "" # Désactive le Health Check HTTP bloquant pour le Frontend
     envVars:
       - key: PORT
         value: 80
