@@ -5,16 +5,10 @@ WORKDIR /app
 # Copier l'ensemble du projet
 COPY . .
 
-# ASTUCE : Nettoyer chirurgicalement les doublons de IPDFServicePOA.java avant compilation
-RUN if [ -f web-middleware/src/main/java/pdfservice/IPDFServicePOA.java ]; then \
-    sed -i '/public.*imagesToPdf/,/}/d' web-middleware/src/main/java/pdfservice/IPDFServicePOA.java && \
-    sed -i '/case.*imagesToPdf/,/break;/d' web-middleware/src/main/java/pdfservice/IPDFServicePOA.java; \
-    fi
-
-RUN if [ -f web-middleware/src/main/java/PDFService/IPDFServicePOA.java ]; then \
-    sed -i '/public.*imagesToPdf/,/}/d' web-middleware/src/main/java/PDFService/IPDFServicePOA.java && \
-    sed -i '/case.*imagesToPdf/,/break;/d' web-middleware/src/main/java/PDFService/IPDFServicePOA.java; \
-    fi
+# Suppression radicale des dossiers de stubs corrompus/doublons avant la compilation
+# On ne garde que le strict nécessaire
+RUN rm -rf web-middleware/src/main/java/pdfservice \
+    && rm -rf web-middleware/src/main/java/PDFService
 
 # Compiler uniquement le module web-middleware en sautant les tests
 RUN mvn clean package -pl web-middleware -DskipTests
