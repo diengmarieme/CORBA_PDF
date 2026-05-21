@@ -510,7 +510,7 @@ public class PdfController {
                 images[i] = files[i].getBytes();
                 mimes[i] = files[i].getContentType() != null ? files[i].getContentType() : "image/jpeg";
             }
-//             byte[] result = corbaClient.getService().imagesToPdf(images, mimes);
+//             byte[] result = // corbaClient.getService().imagesToPdf(images, mimes);
         byte[] result = null;
             return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=images.pdf")
