@@ -5,12 +5,14 @@ WORKDIR /app
 # Copier l'ensemble du projet
 COPY . .
 
-# Suppression radicale des dossiers de stubs corrompus/doublons avant la compilation
-# On ne garde que le strict nécessaire
+# 1. On supprime les vieux fichiers de stubs générés qui traînent sur GitHub
 RUN rm -rf web-middleware/src/main/java/pdfservice \
     && rm -rf web-middleware/src/main/java/PDFService
 
-# Compiler uniquement le module web-middleware en sautant les tests
+# 2. Désactivation chirurgicale du plugin idlj dans le pom.xml pour bloquer la régénération automatique
+RUN sed -i '/<artifactId>idlj-maven-plugin<\/artifactId>/,/<\/plugin>/d' web-middleware/pom.xml
+
+# Compiler uniquement le module web-middleware sans exécuter les tests
 RUN mvn clean package -pl web-middleware -DskipTests
 
 # Étape 2 : Création de l'image d'exécution finale légère
