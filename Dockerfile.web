@@ -1,11 +1,20 @@
+# Étape 1 : Compilation du projet avec Maven et Java 11
+FROM maven:3.8.5-openjdk-11 AS build
+WORKDIR /app
+
+# Copier l'ensemble du projet
+COPY . .
+
+# Compiler uniquement le module web-middleware en sautant les tests
+RUN mvn clean package -pl web-middleware -DskipTests
+
+# Étape 2 : Création de l'image d'exécution finale légère
 FROM eclipse-temurin:11-jre-alpine
 WORKDIR /app
 
-# On copie le JAR que tu viens de générer sur ton PC
-COPY web-middleware/target/web-middleware-0.0.1-SNAPSHOT.jar app.jar
+# Récupérer le JAR généré à l'étape précédente
+COPY --from=build /app/web-middleware/target/web-middleware-*.jar app.jar
 
-# On expose le port
 EXPOSE 8080
 
-# On lance directement
 ENTRYPOINT ["java", "-jar", "app.jar"]
