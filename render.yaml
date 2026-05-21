@@ -1,39 +1,31 @@
 services:
-  # 1. LE BACKEND CORBA & NAMING SERVICE (Déjà fonctionnel)
+  # 1. LE BACKEND CORBA & NAMING SERVICE
   - type: web
     name: pdf-corba-backend
     runtime: docker
     rootDir: .
     dockerfilePath: Dockerfile.server
     plan: free
-    envVars:
-      - key: PORT
-        value: 2809
 
-  # 2. LE MIDDLEWARE SPRING BOOT
+  # 2. LE MIDDLEWARE SPRING BOOT (API REST)
   - type: web
     name: pdf-corba-middleware
     runtime: docker
     rootDir: .
     dockerfilePath: Dockerfile.web
     plan: free
-    healthCheckPath: "" # Désactive le Health Check HTTP bloquant pour Spring Boot
+    healthCheckPath: "" # Empêche Render de couper le service s'il met du temps à s'initialiser
     envVars:
-      - key: PORT
-        value: 8080
       - key: CORBA_NAMING_HOST
-        value: pdf-corba-backend
+        value: pdf-corba-backend-56fl # Utilise le nom exact du service qui a fonctionné
       - key: CORBA_NAMING_PORT
         value: "2809"
 
-  # 3. LE FRONTEND NGINX
+  # 3. LE FRONTEND (Nginx / HTML5)
   - type: web
     name: pdf-corba-frontend
     runtime: docker
     rootDir: .
     dockerfilePath: Dockerfile
     plan: free
-    healthCheckPath: "" # Désactive le Health Check HTTP bloquant pour le Frontend
-    envVars:
-      - key: PORT
-        value: 80
+    healthCheckPath: "" # Force la validation dès que le conteneur Nginx tourne
