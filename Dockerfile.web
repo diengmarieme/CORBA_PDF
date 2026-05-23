@@ -1,27 +1,21 @@
-# Étape 1 : Compilation du projet avec Maven et Java 11
 FROM maven:3.8.5-openjdk-11 AS build
 WORKDIR /app
-
-# Copier l'ensemble du projet
 COPY . .
 
-# 1. On supprime les vieux fichiers de stubs générés qui traînent sur GitHub
-RUN rm -rf web-middleware/src/main/java/pdfservice \
-    && rm -rf web-middleware/src/main/java/PDFService
+# Supprimer les anciens stubs mal placés
+RUN rm -rf web-middleware/src/main/java/pdfservice
 
-# 2. Désactivation chirurgicale du plugin idlj dans le pom.xml pour bloquer la régénération automatique
-RUN sed -i '/<artifactId>idlj-maven-plugin<\/artifactId>/,/<\/plugin>/d' web-middleware/pom.xml
+# Copier les stubs PDFService depuis corba-server vers web-middleware
+RUN cp -r corba-server/src/main/java/PDFService web-middleware/src/main/java/PDFService
 
-# Compiler uniquement le module web-middleware sans exécuter les tests
+# Désactiver le plugin idlj
+RUN sed -i '/<artifactId>idlj-maven-plugin<\/artifactId>/,/<\/plugin>/d' corba-server/pom.xml
+
+# Compiler web-middleware
 RUN mvn clean package -pl web-middleware -DskipTests
 
-# Étape 2 : Création de l'image d'exécution finale légère
 FROM eclipse-temurin:11-jre-alpine
 WORKDIR /app
-
-# Récupérer le JAR généré à l'étape précédente
 COPY --from=build /app/web-middleware/target/web-middleware-*.jar app.jar
-
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
