@@ -2,28 +2,15 @@ FROM maven:3.9-eclipse-temurin-11-alpine AS builder
 WORKDIR /build
 COPY corba-server/pom.xml .
 COPY corba-server/libs ./libs
-RUN sed -i '/<dependencies>/a \
-    <dependency><groupId>org.glassfish.corba</groupId><artifactId>glassfish-corba-orb</artifactId><version>4.2.4</version></dependency> \
-    <dependency><groupId>org.glassfish.corba</groupId><artifactId>glassfish-corba-internal-api</artifactId><version>4.2.4</version></dependency> \
-    <dependency><groupId>org.glassfish.pfl</groupId><artifactId>pfl-basic</artifactId><version>4.0.1</version></dependency> \
-    <dependency><groupId>org.glassfish.pfl</groupId><artifactId>pfl-tf</artifactId><version>4.0.1</version></dependency> \
-    <dependency><groupId>org.glassfish.gmbal</groupId><artifactId>gmbal</artifactId><version>4.0.0</version></dependency>' pom.xml
+RUN mvn dependency:go-offline -q 2>/dev/null || true
 COPY corba-server/src ./src
-RUN mvn compile dependency:copy-dependencies -DoutputDirectory=target/dependency -q
+RUN mvn package -DskipTests -q
 
 FROM eclipse-temurin:11-jre-alpine
+LABEL description="PDF CORBA Server"
 WORKDIR /app
-COPY --from=builder /build/target/classes /app/classes
-COPY --from=builder /build/target/dependency /app/libs
-COPY corba-server/libs/* /app/libs/
-
-RUN printf '#!/bin/sh\n\
-set -e\n\
-echo "[start] Lancement Serveur CORBA avec InitRef..."\n\
-exec java -cp "/app/classes:/app/libs/*" \
-  -Dorg.omg.CORBA.ORBClass=org.jacorb.orb.ORB \
-  -Dorg.omg.CORBA.ORBSingletonClass=org.jacorb.orb.ORBSingleton \
-  com.pdfservice.server.ServerMain \
-  -ORBInitRef NameService=corbaloc:iiop:naming:2809/NameService\n' > /app/start.sh && chmod +x /app/start.sh
-
+COPY --from=builder /build/target/corba-server.jar /app/corba-server.jar
+COPY corba-server/jacorb.properties /app/jacorb.properties
+RUN printf '#!/bin/sh\nset -e\necho "[start] Lancement Serveur CORBA avec InitRef..."\nsleep 15\nexec java -Djacorb.config.dir=/app -Djava.awt.headless=true -Xmx512m -Xms128m -jar /app/corba-server.jar -ORBInitRef NameService=corbaloc:iiop:naming:2809/NameService\n' > /app/start.sh && chmod +x /app/start.sh
+EXPOSE 2810
 ENTRYPOINT ["/app/start.sh"]
