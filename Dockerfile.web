@@ -2,11 +2,8 @@ FROM maven:3.8.5-openjdk-11 AS build
 WORKDIR /app
 COPY . .
 
-# Supprimer les anciens stubs mal placés
+# Supprimer les anciens stubs mal placés uniquement
 RUN rm -rf web-middleware/src/main/java/pdfservice
-
-# Copier les stubs PDFService depuis corba-server vers web-middleware
-RUN cp -r corba-server/src/main/java/PDFService web-middleware/src/main/java/PDFService
 
 # Désactiver le plugin idlj
 RUN sed -i '/<artifactId>idlj-maven-plugin<\/artifactId>/,/<\/plugin>/d' corba-server/pom.xml
