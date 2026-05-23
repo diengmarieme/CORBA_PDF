@@ -174,13 +174,6 @@ public abstract class IPDFServicePOA
                     out.write_long(result.length); out.write_octet_array(result, 0, result.length);
                     return out;
                 }
-                case "imagesToPdf": {
-                    int len = _in.read_long();
-                    byte[][] images = new byte[len][];
-                    for (int i = 0; i < len; i++) {
-                        int l = _in.read_long(); images[i] = new byte[l];
-                        _in.read_octet_array(images[i], 0, l);
-                    }
                     int mlen = _in.read_long();
                     String[] mimeTypes = new String[mlen];
                     for (int i = 0; i < mlen; i++) mimeTypes[i] = _in.read_string();
@@ -216,6 +209,5 @@ public abstract class IPDFServicePOA
     public abstract EmbeddedImageResult extractImages(byte[] pdfFile, String password) throws PDFProcessingException, PDFPasswordException;
     public abstract PDFMetadata getMetadata(byte[] pdfFile, String password) throws PDFProcessingException, PDFPasswordException;
     public abstract String ping();
-    public abstract byte[] imagesToPdf(byte[][] images, String[] mimeTypes) throws PDFProcessingException, InvalidParameterException;
     public abstract byte[] imagesToPdf(byte[][] images, String[] mimeTypes) throws PDFProcessingException, InvalidParameterException;
 }
