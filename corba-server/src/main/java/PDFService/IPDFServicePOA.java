@@ -174,14 +174,6 @@ public abstract class IPDFServicePOA
                     out.write_long(result.length); out.write_octet_array(result, 0, result.length);
                     return out;
                 }
-                    int mlen = _in.read_long();
-                    String[] mimeTypes = new String[mlen];
-                    for (int i = 0; i < mlen; i++) mimeTypes[i] = _in.read_string();
-                    byte[] result = imagesToPdf(images, mimeTypes);
-                    org.omg.CORBA.portable.OutputStream out = rh.createReply();
-                    out.write_long(result.length); out.write_octet_array(result, 0, result.length);
-                    return out;
-                }
                 default:
                     throw new org.omg.CORBA.BAD_OPERATION(0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
             }
