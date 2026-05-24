@@ -2,21 +2,20 @@ FROM maven:3.8.5-openjdk-11 AS build
 WORKDIR /app
 COPY . .
 
-# Supprimer les anciens stubs mal placés
 RUN rm -rf web-middleware/src/main/java/pdfservice \
     && rm -rf web-middleware/src/main/java/PDFService
 
-# Copier les stubs depuis corba-server (source unique de vérité)
 RUN cp -r corba-server/src/main/java/PDFService web-middleware/src/main/java/PDFService
 
-# Désactiver le plugin idlj dans corba-server
 RUN sed -i '/<artifactId>idlj-maven-plugin<\/artifactId>/,/<\/plugin>/d' corba-server/pom.xml
 
-# Compiler web-middleware
 RUN mvn clean package -pl web-middleware -DskipTests
+
+# Lister les JARs produits pour debug
+RUN ls -la /app/web-middleware/target/*.jar
 
 FROM eclipse-temurin:11-jre-alpine
 WORKDIR /app
-COPY --from=build /app/web-middleware/target/web-middleware-*.jar app.jar
+COPY --from=build /app/web-middleware/target/web-middleware-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
