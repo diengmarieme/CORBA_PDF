@@ -73,10 +73,15 @@ public class CORBAClient {
                 catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
             }
         }
-        throw new RuntimeException("IPDFService inaccessible.");
+        log.warning("[CORBA] IPDFService inaccessible - mode dégradé");
+        return null;
     }
 
-    public IPDFService getService() { return pdfService; }
+    public IPDFService getService() {
+        if (pdfService == null) throw new RuntimeException("Service CORBA non disponible");
+        return pdfService;
+    }
+    public boolean isAvailable() { return pdfService != null; }
 
     @PreDestroy
     public void destroy() { if (orb != null) try { orb.shutdown(true); } catch (Exception e) {} }
