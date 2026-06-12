@@ -1,31 +1,18 @@
+# ================================================================
+#  render.yaml — PDF Studio (Single Container)
+#  Placer ce fichier à la RACINE du dépôt GitHub
+#  Render le détecte automatiquement (Blueprint)
+# ================================================================
+
 services:
-  # 1. LE BACKEND CORBA & NAMING SERVICE
   - type: web
-    name: pdf-corba-backend
+    name: pdf-studio
     runtime: docker
-    rootDir: .
-    dockerfilePath: Dockerfile.server
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: free
-
-  # 2. LE MIDDLEWARE SPRING BOOT (API REST)
-  - type: web
-    name: pdf-corba-middleware
-    runtime: docker
-    rootDir: .
-    dockerfilePath: Dockerfile.web
-    plan: free
-    healthCheckPath: "" # Empêche Render de couper le service s'il met du temps à s'initialiser
     envVars:
-      - key: CORBA_NAMING_HOST
-        value: pdf-corba-backend-56fl # Utilise le nom exact du service qui a fonctionné
-      - key: CORBA_NAMING_PORT
-        value: "2809"
-
-  # 3. LE FRONTEND (Nginx / HTML5)
-  - type: web
-    name: pdf-corba-frontend
-    runtime: docker
-    rootDir: .
-    dockerfilePath: Dockerfile
-    plan: free
-    healthCheckPath: "" # Force la validation dès que le conteneur Nginx tourne
+      - key: PORT
+        value: "10000"
+      - key: JAVA_OPTS
+        value: "-Xms64m -Xmx200m -Djava.awt.headless=true"
