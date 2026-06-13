@@ -1646,7 +1646,7 @@ async function checkServer(){
   const dot  = document.getElementById('statusDot');
   const text = document.getElementById('statusText');
   try {
-    const res = await fetch(`${API}/ping`, {signal: AbortSignal.timeout(4000)});
+    const res = await fetch(`${API}/pdf/ping`, {signal: AbortSignal.timeout(15000)});
     if(res.ok){
       dot.className  = 'status-dot online';
       text.textContent = 'Serveur en ligne';
