@@ -48,7 +48,6 @@ COPY web-middleware/pom.xml .
 RUN mvn dependency:go-offline -q 2>/dev/null || true
 
 # Injecter les stubs CORBA dans le middleware
-COPY corba-server/src/main/java/PDFService ./src/main/java/PDFService
 COPY web-middleware/src ./src
 
 RUN mvn package -DskipTests -q
@@ -131,7 +130,6 @@ COPY web-middleware/pom.xml .
 RUN mvn dependency:go-offline -q 2>/dev/null || true
 
 # Injecter les stubs CORBA dans le middleware
-COPY corba-server/src/main/java/PDFService ./src/main/java/PDFService
 COPY web-middleware/src ./src
 
 RUN mvn package -DskipTests -q
